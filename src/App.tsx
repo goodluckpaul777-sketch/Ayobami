@@ -13,15 +13,6 @@ import {
   MAIN_SECTIONS,
   OFFICIAL_LOGO_URL,
 } from './data/initialData';
-import {
-  subscribeToProducts,
-  saveProductToFirestore,
-  deleteProductFromFirestore,
-  subscribeToSettings,
-  saveSettingsToFirestore,
-  subscribeToInquiries,
-  saveInquiryToFirestore,
-} from './firebase';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CategoryGrid } from './components/CategoryGrid';
@@ -71,7 +62,7 @@ function safeSetLocalStorage(key: string, data: any) {
         localStorage.setItem(key, JSON.stringify(stripped));
       }
     } catch {
-      // Firestore cloud database handles all full image persistence
+      // Safe storage fallback
     }
   }
 }
@@ -81,7 +72,17 @@ export default function App() {
   const [products, setProducts] = useState<FabricProduct[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasPeacock = parsed.some(p => p.name?.toLowerCase().includes('peacock'));
+          if (!hasPeacock) {
+            return [...INITIAL_PRODUCTS, ...parsed];
+          }
+          return parsed;
+        }
+      }
+      return INITIAL_PRODUCTS;
     } catch {
       return INITIAL_PRODUCTS;
     }
@@ -140,7 +141,7 @@ export default function App() {
   const [isYardGuideOpen, setIsYardGuideOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
 
-  // Sync to localStorage safely with quota fallback (Firestore is primary cloud storage)
+  // Sync to localStorage
   useEffect(() => {
     safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, products);
   }, [products]);
@@ -156,39 +157,6 @@ export default function App() {
   useEffect(() => {
     safeSetLocalStorage(STORAGE_KEYS.ORDERS, inquiries);
   }, [inquiries]);
-
-  // Live Firebase Real-time listeners for all store visitors
-  useEffect(() => {
-    const unsubProducts = subscribeToProducts((liveProducts) => {
-      if (Array.isArray(liveProducts)) {
-        setProducts(liveProducts);
-      }
-    });
-
-    const unsubSettings = subscribeToSettings((liveSettings) => {
-      if (liveSettings) {
-        const isOutdatedAddress = !liveSettings.address || liveSettings.address.includes('Main Market Plaza') || liveSettings.address.includes('Shop 14') || liveSettings.address.includes('Ibadan');
-        setSettings({
-          ...INITIAL_STORE_SETTINGS,
-          ...liveSettings,
-          address: isOutdatedAddress ? '37/39 Balogun West, Molake House, Lagos Island, Nigeria' : liveSettings.address,
-          marketLocation: isOutdatedAddress ? '37/39 Balogun West, Molake House, Lagos Island' : (liveSettings.marketLocation || '37/39 Balogun West, Molake House, Lagos Island'),
-        });
-      }
-    });
-
-    const unsubInquiries = subscribeToInquiries((liveInquiries) => {
-      if (liveInquiries) {
-        setInquiries(liveInquiries);
-      }
-    });
-
-    return () => {
-      unsubProducts();
-      unsubSettings();
-      unsubInquiries();
-    };
-  }, []);
 
   // Inquiry operations
   const handleAddToCart = (product: FabricProduct, quantity: number, selectedColor?: string) => {
@@ -249,7 +217,6 @@ export default function App() {
     };
 
     setInquiries(prev => [newInquiry, ...prev]);
-    saveInquiryToFirestore(newInquiry).catch(console.error);
   };
 
   // Product Filter
@@ -679,7 +646,6 @@ export default function App() {
             safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
             return updated;
           });
-          saveProductToFirestore(prod).catch(console.error);
         }}
         onDeleteProduct={(id) => {
           setProducts(prev => {
@@ -687,17 +653,13 @@ export default function App() {
             safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
             return updated;
           });
-          deleteProductFromFirestore(id).catch(console.error);
         }}
         onUpdateSettings={(newSettings) => {
           setSettings(newSettings);
-          saveSettingsToFirestore(newSettings).catch(console.error);
         }}
         onUpdateInquiryStatus={(inqId, status) => {
           setInquiries(prev => {
             const updated = prev.map(inq => inq.id === inqId ? { ...inq, status } : inq);
-            const target = updated.find(i => i.id === inqId);
-            if (target) saveInquiryToFirestore(target).catch(console.error);
             return updated;
           });
         }}

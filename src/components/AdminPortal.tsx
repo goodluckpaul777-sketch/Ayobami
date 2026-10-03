@@ -401,7 +401,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Live Firebase Cloud Sync
+              Live Storefront Active
             </span>
             <button
               onClick={handleExitPortal}
@@ -554,12 +554,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                   </div>
                 </div>
 
-                {/* Cloud Database Status */}
+                {/* Store Database Status */}
                 <div className="bg-white p-6 rounded-2xl border-2 border-emerald-600/20 shadow-sm flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-black uppercase text-emerald-600 block tracking-wider">Cloud Database</span>
-                    <h3 className="text-2xl font-black text-emerald-900 mt-1">Firebase Live</h3>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Real-time sync to all devices</p>
+                    <span className="text-xs font-black uppercase text-emerald-600 block tracking-wider">Store Database</span>
+                    <h3 className="text-2xl font-black text-emerald-900 mt-1">Live & Active</h3>
+                    <p className="text-xs text-gray-500 font-semibold mt-0.5">Instant catalog and order updates</p>
                   </div>
                   <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black">
                     <Shield className="w-6 h-6" />
@@ -1452,7 +1452,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 Are you sure you want to delete <span className="font-black text-gray-900">"{deleteConfirmProduct.name}"</span>?
               </p>
               <p className="text-[11px] text-red-600 font-bold mt-1">
-                This item will be permanently removed from your storefront and Firebase database.
+                This item will be permanently removed from your storefront and catalog.
               </p>
             </div>
             <div className="flex items-center gap-3 pt-2">

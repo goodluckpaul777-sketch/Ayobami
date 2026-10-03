@@ -1,6 +1,6 @@
 /**
  * Utility to compress and downscale uploaded image files or base64 strings
- * so they fit cleanly inside Firestore documents (< 1MB) and localStorage without failing.
+ * so they fit cleanly inside client storage and localStorage without failing.
  */
 export async function compressImage(fileOrDataUrl: File | string, maxDimension = 1000, quality = 0.8): Promise<string> {
   return new Promise((resolve) => {

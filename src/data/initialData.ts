@@ -1,9 +1,48 @@
 import { Category, FabricProduct, StoreSettings, SectionCategoryInfo, TailoringYardGuide, CustomerTestimonial } from '../types';
 
 export const INITIAL_CATEGORIES: Category[] = [
+  { id: 'cat-machines-irons', name: 'Tailoring Irons & Equipment', slug: 'tailoring-irons', mainSection: 'tailoring-machine', description: 'Heavy-duty tailor pressing irons and tools', itemCount: 1 },
+  { id: 'cat-machines-industrial', name: 'Industrial Sewing Machines', slug: 'industrial-machines', mainSection: 'tailoring-machine', description: 'Direct drive industrial tailoring machines', itemCount: 0 },
+  { id: 'cat-cloths-ankara', name: 'Ankara Prints', slug: 'ankara', mainSection: 'cloths', description: 'Original vibrant African wax prints', itemCount: 0 },
+  { id: 'cat-cloths-lace', name: 'Swiss Voile Lace', slug: 'lace', mainSection: 'cloths', description: 'Luxury party and owambe lace fabrics', itemCount: 0 },
+  { id: 'cat-cloths-senator', name: 'Senator Suiting', slug: 'senator', mainSection: 'cloths', description: 'Super 150s wool cashmere suitings', itemCount: 0 },
+  { id: 'cat-shoes-loafers', name: 'Men Loafers', slug: 'loafers', mainSection: 'shoes', description: 'Handcrafted genuine leather loafers', itemCount: 0 },
+  { id: 'cat-shoes-matching-sets', name: 'Matching Shoe & Bag Sets', slug: 'matching-sets', mainSection: 'shoes', description: 'Coordinated 2-in-1 party sets', itemCount: 0 },
 ];
 
 export const INITIAL_PRODUCTS: FabricProduct[] = [
+  {
+    id: 'prod-peacock-iron',
+    name: 'Peacock Iron',
+    mainSection: 'tailoring-machine',
+    category: 'Tailoring Irons & Equipment',
+    categorySlug: 'tailoring-irons',
+    description: 'Original heavy-duty Peacock tailoring pressing iron. Features solid cast metal construction, superior heat retention, ergonomic heat-resistant wooden handle, and smooth heavy pressing base. Perfect for creating razor-sharp creases on Senator native suits, Agbada folds, Ankara dresses, and heavy tailoring fabrics.',
+    availableStock: 30,
+    minimumOrder: 1,
+    unitLabel: 'piece',
+    image: '/peacock-iron.jpeg',
+    galleryImages: ['/peacock-iron.jpeg'],
+    colors: ['Original Silver Metal'],
+    fabricType: 'Heavy-Duty Solid Cast Metal Pressing Iron',
+    isNewArrival: true,
+    isFeatured: true,
+    inStock: true,
+    rating: 5.0,
+    reviewCount: 42,
+    suitableFor: [
+      'Senator Native Suit Creasing',
+      'Agbada & Buba Pressing',
+      'Lace & Ankara Starch Finishing',
+      'Professional Tailoring Workshops',
+      'Commercial Dry Cleaning & Pressing'
+    ],
+    textureNote: 'Solid heavy-gauge iron base with superior heat conductivity for razor-sharp tailoring creases.',
+    origin: 'Original Peacock Brand',
+    isWholesaleAvailable: true,
+    wholesaleNote: 'Bulk carton wholesale pricing available for tailoring institutes and merchants nationwide.',
+    badge: 'Tailor Choice'
+  }
 ];
 
 export const STORE_SETTINGS: StoreSettings = {
@@ -54,6 +93,36 @@ export const OFFICIAL_LOGO_URL = '/hero-logo.png';
 export const CATEGORIES = INITIAL_CATEGORIES;
 
 export const MAIN_SECTIONS: SectionCategoryInfo[] = [
+  {
+    id: 'cloths',
+    name: 'Fabrics & Textiles',
+    slug: 'cloths',
+    subtitle: 'Laces, Ankara & Senator Suitings',
+    description: 'Authentic Swiss Voile Laces, Dutch Wax Ankara, Guinea Brocade, and Super 150s Cashmere Senator materials.',
+    image: '/shop-location.jpg',
+    subcategories: ['Ankara Prints', 'Swiss Voile Lace', 'Senator Cashmere', 'Atiku Brocade'],
+    features: ['100% Pure Cotton', 'Original Dutch Wax', 'Direct Wholesale Cuts', 'Aso-Ebi Uniform Bundles']
+  },
+  {
+    id: 'shoes',
+    name: 'Shoes, Bags & Sets',
+    slug: 'shoes',
+    subtitle: 'Handcrafted Italian Shoes & Matching Sets',
+    description: 'Bespoke Italian native loafers, formal monk straps, and luxury coordinated 2-in-1 matching shoe & clutch bag sets.',
+    image: '/logo.png',
+    subcategories: ['Men Native Loafers', '2-in-1 Matching Sets', 'Luxury Handbags', 'Monk Strap Shoes'],
+    features: ['Genuine Italian Leather', 'Coordinated Color Sets', 'Comfort Cushion Soles', 'Bespoke Sizing']
+  },
+  {
+    id: 'tailoring-machine',
+    name: 'Tailoring Machines & Equipment',
+    slug: 'tailoring-machine',
+    subtitle: 'Industrial, Domestic & Pressing Gear',
+    description: 'Commercial direct-drive sewing machines, Peacock heavy-duty pressing irons, overlock machines, and tailoring workshop equipment.',
+    image: '/peacock-iron.jpeg',
+    subcategories: ['Tailoring Irons & Equipment', 'Industrial Machines', 'Domestic Sewing', 'Overlock Weaving'],
+    features: ['Heavy Duty Durability', 'Superior Heat Retention', 'Smooth Flat Pressing', 'Workshop Ready']
+  }
 ];
 
 export const TAILORING_YARD_GUIDES: TailoringYardGuide[] = [
