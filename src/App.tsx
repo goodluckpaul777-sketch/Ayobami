@@ -30,6 +30,15 @@ import { AboutUsSection } from './components/AboutUsSection';
 import { Footer } from './components/Footer';
 import { DesignGroupOrganizer } from './components/DesignGroupOrganizer';
 import { MessageCircle, Sparkles, Filter, SlidersHorizontal, Shirt, Footprints, Scissors, Search, Shield, ShoppingBag, Palette, ArrowLeft } from 'lucide-react';
+import {
+  subscribeToProducts,
+  subscribeToSettings,
+  saveProductToCloud,
+  deleteProductFromCloud,
+  saveSettingsToCloud,
+  saveInquiryToCloud,
+  testFirestoreConnection,
+} from './services/cloudSyncService';
 
 const STORAGE_KEYS = {
   PRODUCTS: 'asv_products_v5_real_imported_media',
@@ -140,8 +149,55 @@ export default function App() {
   const [isInquiryBagOpen, setIsInquiryBagOpen] = useState(false);
   const [isYardGuideOpen, setIsYardGuideOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<'connected' | 'syncing' | 'offline'>('syncing');
 
-  // Sync to localStorage
+  // Real-time Cloud Synchronization across all devices (Firebase Firestore)
+  useEffect(() => {
+    let isMounted = true;
+
+    // Verify server connectivity
+    testFirestoreConnection().then(isConnected => {
+      if (isMounted) {
+        setCloudSyncStatus(isConnected ? 'connected' : 'offline');
+      }
+    });
+
+    // Subscribe to products collection in real time
+    const unsubscribeProducts = subscribeToProducts(
+      (cloudProducts) => {
+        if (isMounted && Array.isArray(cloudProducts) && cloudProducts.length > 0) {
+          setProducts(cloudProducts);
+          safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, cloudProducts);
+          setCloudSyncStatus('connected');
+        }
+      },
+      (error) => {
+        console.warn('Real-time products sync warning:', error);
+        if (isMounted) setCloudSyncStatus('offline');
+      }
+    );
+
+    // Subscribe to store settings in real time
+    const unsubscribeSettings = subscribeToSettings(
+      (cloudSettings) => {
+        if (isMounted && cloudSettings) {
+          setSettings(cloudSettings);
+          safeSetLocalStorage(STORAGE_KEYS.SETTINGS, cloudSettings);
+        }
+      },
+      (error) => {
+        console.warn('Real-time settings sync warning:', error);
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      unsubscribeProducts();
+      unsubscribeSettings();
+    };
+  }, []);
+
+  // Sync to localStorage as fast client-side offline cache
   useEffect(() => {
     safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, products);
   }, [products]);
@@ -217,6 +273,7 @@ export default function App() {
     };
 
     setInquiries(prev => [newInquiry, ...prev]);
+    saveInquiryToCloud(newInquiry).catch(err => console.warn('Inquiry cloud backup warning:', err));
   };
 
   // Product Filter
@@ -633,6 +690,7 @@ export default function App() {
         products={products}
         settings={settings}
         inquiries={inquiries}
+        cloudSyncStatus={cloudSyncStatus}
         onSaveProduct={(prod) => {
           setProducts(prev => {
             const idx = prev.findIndex(p => p.id === prod.id);
@@ -646,6 +704,13 @@ export default function App() {
             safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
             return updated;
           });
+          setCloudSyncStatus('syncing');
+          saveProductToCloud(prod)
+            .then(() => setCloudSyncStatus('connected'))
+            .catch(err => {
+              console.error('Failed to sync product to cloud:', err);
+              setCloudSyncStatus('offline');
+            });
         }}
         onDeleteProduct={(id) => {
           setProducts(prev => {
@@ -653,9 +718,19 @@ export default function App() {
             safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
             return updated;
           });
+          setCloudSyncStatus('syncing');
+          deleteProductFromCloud(id)
+            .then(() => setCloudSyncStatus('connected'))
+            .catch(err => {
+              console.error('Failed to delete product from cloud:', err);
+              setCloudSyncStatus('offline');
+            });
         }}
         onUpdateSettings={(newSettings) => {
           setSettings(newSettings);
+          safeSetLocalStorage(STORAGE_KEYS.SETTINGS, newSettings);
+          saveSettingsToCloud(newSettings)
+            .catch(err => console.error('Failed to sync settings to cloud:', err));
         }}
         onUpdateInquiryStatus={(inqId, status) => {
           setInquiries(prev => {

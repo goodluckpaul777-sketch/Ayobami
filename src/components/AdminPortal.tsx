@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { FabricProduct, StoreSettings, InquiryRecord, MainSectionType, SectionCategoryInfo } from '../types';
 import { MAIN_SECTIONS, OFFICIAL_LOGO_URL } from '../data/initialData';
-import { compressImage } from '../utils/imageCompressor';
+import { compressImage, estimatePayloadSize } from '../utils/imageCompressor';
 import { 
   Plus, Edit, Trash2, Package, Truck, Settings, ShoppingBag, 
   Check, RefreshCw, Upload, Star, ArrowLeft, ArrowRight, Image as ImageIcon, Eye,
@@ -21,6 +21,7 @@ interface AdminPortalProps {
   onUpdateSettings: (newSettings: StoreSettings) => void;
   onUpdateInquiryStatus: (inquiryId: string, status: InquiryRecord['status']) => void;
   onResetToDefaults: () => void;
+  cloudSyncStatus?: 'connected' | 'syncing' | 'offline';
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -34,6 +35,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onUpdateSettings,
   onUpdateInquiryStatus,
   onResetToDefaults,
+  cloudSyncStatus = 'connected',
 }) => {
   if (!isOpen) return null;
 
@@ -63,7 +65,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
     onClose();
   };
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'inquiries' | 'settings' | 'delivery'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'inquiries' | 'settings' | 'delivery' | 'cloud'>('dashboard');
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<'all' | MainSectionType>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [editingProduct, setEditingProduct] = useState<FabricProduct | null>(null);
@@ -72,6 +74,17 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Custom fresh Firebase project state
+  const [customFirebase, setCustomFirebase] = useState(() => {
+    try {
+      const saved = localStorage.getItem('asv_custom_firebase_project');
+      return saved ? JSON.parse(saved) : { apiKey: '', projectId: '', appId: '', storageBucket: '' };
+    } catch {
+      return { apiKey: '', projectId: '', appId: '', storageBucket: '' };
+    }
+  });
+  const [copiedCatalog, setCopiedCatalog] = useState(false);
 
   // Editable settings draft
   const [draftSettings, setDraftSettings] = useState<StoreSettings>(settings);
@@ -148,7 +161,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const handleAddImageUrl = async () => {
     if (!newImageUrl.trim()) return;
     try {
-      const compressed = await compressImage(newImageUrl.trim(), 1000, 0.82);
+      const compressed = await compressImage(newImageUrl.trim(), 800, 0.75);
       const updated = [...currentGalleryImages, compressed];
       setProductForm({
         ...productForm,
@@ -173,7 +186,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
     for (const file of Array.from(files)) {
       try {
-        const compressed = await compressImage(file, 1000, 0.82);
+        const compressed = await compressImage(file, 800, 0.75);
         setProductForm((prev) => {
           const existing = prev.galleryImages || (prev.image ? [prev.image] : []);
           const updated = [...existing, compressed];
@@ -227,7 +240,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
     // Compress all images in gallery asynchronously
     const compressedGallery = await Promise.all(
-      rawGallery.map(img => compressImage(img, 1000, 0.82))
+      rawGallery.map(img => compressImage(img, 800, 0.75))
     );
 
     const productToSave: FabricProduct = {
@@ -399,9 +412,23 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Live Storefront Active
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-colors shadow-xs"
+              style={{
+                backgroundColor: cloudSyncStatus === 'connected' ? 'rgba(6, 78, 59, 0.9)' : cloudSyncStatus === 'syncing' ? 'rgba(113, 63, 18, 0.9)' : 'rgba(127, 29, 29, 0.9)',
+                color: cloudSyncStatus === 'connected' ? '#6ee7b7' : cloudSyncStatus === 'syncing' ? '#fde047' : '#fca5a5',
+                borderColor: cloudSyncStatus === 'connected' ? 'rgba(16, 185, 129, 0.5)' : cloudSyncStatus === 'syncing' ? 'rgba(234, 179, 8, 0.5)' : 'rgba(239, 68, 68, 0.5)',
+              }}
+              title="Real-time multi-device cloud synchronization active for Vercel"
+            >
+              <span className={`w-2 h-2 rounded-full ${cloudSyncStatus === 'connected' ? 'bg-emerald-400 animate-pulse' : cloudSyncStatus === 'syncing' ? 'bg-yellow-400 animate-ping' : 'bg-red-400'}`}></span>
+              <span>
+                {cloudSyncStatus === 'connected'
+                  ? 'Cloud Sync: Live on all devices'
+                  : cloudSyncStatus === 'syncing'
+                  ? 'Syncing to Cloud...'
+                  : 'Offline Storage Active'}
+              </span>
             </span>
             <button
               onClick={handleExitPortal}
@@ -505,6 +532,21 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             }`}
           >
             <Truck className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* Sticker 6: Cloud Sync & Vercel Setup */}
+          <button
+            onClick={() => { setActiveTab('cloud'); setEditingProduct(null); setIsCreatingNew(false); }}
+            title="Cloud Sync & Vercel Deployment"
+            aria-label="Cloud Sync & Vercel Deployment"
+            className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl transition-all flex items-center justify-center shrink-0 relative cursor-pointer ${
+              activeTab === 'cloud'
+                ? 'bg-[#0F2E22] text-[#D4AF37] shadow-md scale-105 border-2 border-[#D4AF37]'
+                : 'bg-[#FAF8F5] hover:bg-[#F0EAE1] text-gray-700 border border-gray-200'
+            }`}
+          >
+            <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" />
+            <span className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white ${cloudSyncStatus === 'connected' ? 'bg-emerald-500' : cloudSyncStatus === 'syncing' ? 'bg-yellow-400' : 'bg-red-500'}`}></span>
           </button>
 
         </div>
@@ -775,7 +817,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                             <span>Product Photos & Carousel Gallery ({currentGalleryImages.length} images)</span>
                           </h4>
                           <p className="text-xs text-gray-500 font-medium">
-                            The first image is the main photo. Customers can swipe horizontally through all pictures like on Jumia.
+                            First image is the main photo. Images auto-compress to lightweight WebP (~30–50 KB) to save database space and load fast across all devices.
                           </p>
                         </div>
 
@@ -833,7 +875,12 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                                 </span>
                               )}
                               <div className="mt-1 flex items-center justify-between text-[11px]">
-                                <span className="font-bold text-gray-400">#{idx + 1}</span>
+                                <div className="flex items-center gap-1">
+                                  <span className="font-bold text-gray-400">#{idx + 1}</span>
+                                  <span className="text-[9px] font-mono text-emerald-700 bg-emerald-100/80 px-1 py-0.5 rounded font-bold">
+                                    {estimatePayloadSize(imgUrl)}
+                                  </span>
+                                </div>
                                 <div className="flex items-center gap-1">
                                   {idx > 0 && (
                                     <button
@@ -1431,6 +1478,192 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 >
                   Save Delivery Rates
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: CLOUD SYNC & VERCEL DEPLOYMENT */}
+          {activeTab === 'cloud' && (
+            <div className="space-y-8 animate-fadeIn">
+              {/* Header */}
+              <div>
+                <h3 className="text-xl font-black text-[#0F2E22] flex items-center gap-2">
+                  <Sparkles className="w-6 h-6 text-[#D4AF37]" />
+                  <span>Cloud Synchronization & Multi-Device Vercel Setup</span>
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  Manage how your store reflects changes across all visitor devices on Vercel hosting.
+                </p>
+              </div>
+
+              {/* Status Card */}
+              <div className="p-6 bg-white rounded-3xl border border-[#E8E2D9] shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Current Cloud Status</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`w-3 h-3 rounded-full ${cloudSyncStatus === 'connected' ? 'bg-emerald-500 animate-pulse' : cloudSyncStatus === 'syncing' ? 'bg-yellow-400 animate-spin' : 'bg-amber-500'}`}></span>
+                      <h4 className="text-base font-black text-gray-900">
+                        {cloudSyncStatus === 'connected' 
+                          ? 'Live Cloud Sync Connected (Multi-Device Active)'
+                          : cloudSyncStatus === 'syncing'
+                          ? 'Synchronizing Changes...'
+                          : 'Local Safe Storage Active (Project Quota Reached or Offline)'}
+                      </h4>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold rounded-xl self-start sm:self-auto">
+                    {customFirebase.projectId ? `Custom Project: ${customFirebase.projectId}` : 'Default Cloud Project: ferrous-alcove-xghtt'}
+                  </span>
+                </div>
+
+                <div className="bg-[#FAF8F5] p-4 rounded-2xl border border-[#D8CFC4]/60 text-xs text-gray-600 space-y-1.5">
+                  <p className="font-bold text-[#0F2E22]">ℹ️ How Live Syncing Works:</p>
+                  <p>• Whenever an image or product is uploaded or deleted, it saves immediately to your local device cache, and also syncs to the cloud.</p>
+                  <p>• Visitors on Vercel automatically download the latest images and products in real time.</p>
+                </div>
+              </div>
+
+              {/* Connect Fresh Firebase Project for Client */}
+              <div className="p-6 bg-white rounded-3xl border border-[#E8E2D9] shadow-sm space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h4 className="text-base font-black text-[#0F2E22] flex items-center gap-2">
+                      <KeyRound className="w-5 h-5 text-[#D4AF37]" />
+                      <span>Connect Fresh Dedicated Firebase Project (For Your Client)</span>
+                    </h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Creating a fresh project for your client gives them a brand new, private database with 50,000 reads and 20,000 writes free every single day.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Firebase Project ID *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. adebisi-fabrics-client"
+                      value={customFirebase.projectId || ''}
+                      onChange={(e) => setCustomFirebase({ ...customFirebase, projectId: e.target.value.trim() })}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-[#0F2E22]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">API Key (apiKey) *</label>
+                    <input
+                      type="text"
+                      placeholder="AIzaSy..."
+                      value={customFirebase.apiKey || ''}
+                      onChange={(e) => setCustomFirebase({ ...customFirebase, apiKey: e.target.value.trim() })}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-[#0F2E22]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">App ID (appId) *</label>
+                    <input
+                      type="text"
+                      placeholder="1:123456789:web:abcdef..."
+                      value={customFirebase.appId || ''}
+                      onChange={(e) => setCustomFirebase({ ...customFirebase, appId: e.target.value.trim() })}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-[#0F2E22]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Storage Bucket (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="project-id.appspot.com"
+                      value={customFirebase.storageBucket || ''}
+                      onChange={(e) => setCustomFirebase({ ...customFirebase, storageBucket: e.target.value.trim() })}
+                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-xs font-mono font-medium focus:ring-2 focus:ring-[#0F2E22]"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!customFirebase.projectId || !customFirebase.apiKey || !customFirebase.appId) {
+                        alert('Please fill in Project ID, API Key, and App ID.');
+                        return;
+                      }
+                      localStorage.setItem('asv_custom_firebase_project', JSON.stringify(customFirebase));
+                      setSaveSuccessMsg('Fresh Firebase Project configured! Reloading to connect...');
+                      setTimeout(() => window.location.reload(), 1500);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#0F2E22] hover:bg-[#1B4332] text-white text-xs font-black shadow-md cursor-pointer flex items-center gap-2"
+                  >
+                    <Check className="w-4 h-4 text-[#D4AF37]" />
+                    <span>Save & Connect Fresh Project</span>
+                  </button>
+
+                  {customFirebase.projectId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        localStorage.removeItem('asv_custom_firebase_project');
+                        setCustomFirebase({ apiKey: '', projectId: '', appId: '', storageBucket: '' });
+                        setSaveSuccessMsg('Reverted to default cloud project. Reloading...');
+                        setTimeout(() => window.location.reload(), 1500);
+                      }}
+                      className="text-xs font-bold text-red-600 hover:text-red-800 underline cursor-pointer"
+                    >
+                      Reset to Default Project
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 1-Click Catalog Exporter for Vercel */}
+              <div className="p-6 bg-white rounded-3xl border border-[#E8E2D9] shadow-sm space-y-4">
+                <div>
+                  <h4 className="text-base font-black text-[#0F2E22] flex items-center gap-2">
+                    <Package className="w-5 h-5 text-[#D4AF37]" />
+                    <span>Permanent Vercel Export (Zero Database Limits)</span>
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Export your current catalog with all {products.length} products (including Peacock Iron, fabrics, images, and prices). You can download it as a backup or copy it directly into your GitHub codebase.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(products, null, 2));
+                      const downloadAnchor = document.createElement('a');
+                      downloadAnchor.setAttribute('href', dataStr);
+                      downloadAnchor.setAttribute('download', `adebisi_catalog_${new Date().toISOString().slice(0, 10)}.json`);
+                      document.body.appendChild(downloadAnchor);
+                      downloadAnchor.click();
+                      downloadAnchor.remove();
+                      setSaveSuccessMsg('Catalog JSON exported successfully!');
+                      setTimeout(() => setSaveSuccessMsg(''), 4000);
+                    }}
+                    className="px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#c49b29] text-[#0F2E22] text-xs font-black shadow-md cursor-pointer flex items-center gap-2"
+                  >
+                    <Upload className="w-4 h-4 rotate-180" />
+                    <span>Download Live Catalog (JSON)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(JSON.stringify(products, null, 2));
+                      setCopiedCatalog(true);
+                      setTimeout(() => setCopiedCatalog(false), 3000);
+                    }}
+                    className="px-5 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-black shadow-xs cursor-pointer flex items-center gap-2"
+                  >
+                    <Check className={`w-4 h-4 ${copiedCatalog ? 'text-emerald-600' : 'text-gray-400'}`} />
+                    <span>{copiedCatalog ? 'Copied to Clipboard!' : 'Copy Products JSON'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}

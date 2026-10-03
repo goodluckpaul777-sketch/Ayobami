@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Store inventory product item (fabric, machine, accessory, or footwear)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for product"
+        },
+        "name": {
+          "type": "string",
+          "description": "Product display name"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in NGN"
+        },
+        "department": {
+          "type": "string",
+          "description": "Main department key"
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category"
+        },
+        "image": {
+          "type": "string",
+          "description": "Primary product image URL or compressed webp base64"
+        },
+        "description": {
+          "type": "string",
+          "description": "Product specification and description"
+        },
+        "inStock": {
+          "type": "boolean",
+          "description": "Availability flag"
+        },
+        "featured": {
+          "type": "boolean",
+          "description": "Featured on storefront flag"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "name", "price", "department", "category", "image"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Store configuration and contact details",
+      "type": "object",
+      "properties": {
+        "storeName": {
+          "type": "string",
+          "description": "Store legal and brand name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number"
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp ordering phone number"
+        },
+        "address": {
+          "type": "string",
+          "description": "Physical shop location"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["storeName", "phone", "whatsapp"]
+    },
+    "Inquiry": {
+      "title": "Inquiry",
+      "description": "Customer purchase inquiry or order message",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique inquiry ID"
+        },
+        "customerName": {
+          "type": "string",
+          "description": "Customer contact name"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone number"
+        },
+        "status": {
+          "type": "string",
+          "description": "Order processing status"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        }
+      },
+      "required": ["id", "customerName", "phone", "status"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Public catalog of products editable by admin and viewable by all customers"
+    },
+    "/settings/{settingId}": {
+      "schema": "StoreSettings",
+      "description": "Store contact info and operational parameters"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "Customer order inquiries"
+    }
+  }
+}

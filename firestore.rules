@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isValidProduct(data) {
+      return data.id is string
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
+        && data.price is number && data.price >= 0
+        && data.department is string
+        && data.category is string
+        && data.image is string && data.image.size() > 0;
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isValidProduct(request.resource.data);
+      allow delete: if true;
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /inquiries/{inquiryId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.customerName is string && request.resource.data.phone is string;
+      allow delete: if true;
+    }
+  }
+}
