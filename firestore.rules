@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection testing
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Products catalog: publicly readable by any store visitor; modifiable via admin portal
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Store settings: readable by all visitors; modifiable via admin portal
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+
+    // Customer inquiries: can be submitted by shoppers and viewed in admin portal
+    match /inquiries/{inquiryId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+    }
+  }
+}
