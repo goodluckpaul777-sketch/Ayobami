@@ -116,7 +116,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         `👤 *Customer:* ${customerName}\n` +
         `📞 *Phone:* ${phoneNumber}\n` +
         `📍 *Location:* ${stateOrCity}\n` +
-        `🏠 *Delivery Address:* ${paymentMethod === 'pickup' ? 'Store Pickup (Balogun)' : deliveryAddress}\n` +
+        `🏠 *Delivery Address:* ${deliveryAddress}\n` +
         `💳 *Payment:* ${paymentMethod.toUpperCase()}\n\n` +
         `*ORDERED ITEMS:*\n${itemsText}\n\n` +
         `📦 *Subtotal:* ${formatNaira(subtotal)}\n` +

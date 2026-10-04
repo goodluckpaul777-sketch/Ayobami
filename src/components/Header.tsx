@@ -130,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Add Cloth Product & Upload Photos"
             >
               <Camera className="w-4 h-4 text-stone-950" />
-              <span>+ Upload Photos</span>
+              <span>+ Add Product</span>
             </button>
 
             {/* Cart Button */}

@@ -4,32 +4,26 @@ import {
   Upload, 
   Plus, 
   Trash2, 
-  Edit3, 
-  RefreshCw, 
-  Cloud, 
   Check, 
-  AlertCircle, 
-  Image as ImageIcon,
-  Save,
-  Download,
-  FolderOpen,
-  Sparkles,
-  Layers,
-  Database,
   Camera,
-  Loader2
+  Loader2,
+  Sparkles,
+  ShoppingBag,
+  ExternalLink,
+  Layers,
+  CheckCircle2,
+  Image as ImageIcon
 } from 'lucide-react';
-import { Product } from '../types';
+import { Product, CategoryId } from '../types';
 import { formatNaira, generateId } from '../utils/formatters';
-import { compressImageFile } from '../utils/imageCompressor';
 import { StoreService } from '../services/storeService';
-import { testFirestoreConnection, firebaseConfig } from '../firebase';
+import { firebaseConfig } from '../firebase';
 
 interface AdminPortalProps {
   isOpen: boolean;
   onClose: () => void;
   products: Product[];
-  onProductsUpdated: (updated: Product[]) => void;
+  onProductsUpdated: (products: Product[]) => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -40,808 +34,571 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState<'upload' | 'catalog' | 'cloud'>('upload');
-  
-  // Image Upload state
-  const [selectedProductId, setSelectedProductId] = useState<string>(
-    products.length > 0 ? products[0].id : ''
-  );
-  const [newImageUrls, setNewImageUrls] = useState<string[]>([]);
-  const [urlInput, setUrlInput] = useState('');
-  const [isProcessingImages, setIsProcessingImages] = useState(false);
-  const [uploadMessage, setUploadMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [activeTab, setActiveTab] = useState<'add' | 'list'>('add');
 
-  // New/Edit Product Form state
-  const [isEditingProduct, setIsEditingProduct] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // Form State for Adding / Editing Product
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState<'ankara' | 'lace' | 'senator-atiku' | 'sewing-machines' | 'accessories'>('ankara');
+  const [formCategory, setFormCategory] = useState<CategoryId>('ankara');
   const [formPrice, setFormPrice] = useState<number>(30000);
-  const [formOriginalPrice, setFormOriginalPrice] = useState<number>(35000);
   const [formUnit, setFormUnit] = useState('per 6 yards piece');
-  const [formDescription, setFormDescription] = useState('');
-  const [formStock, setFormStock] = useState<number>(20);
+  const [formDescription, setFormDescription] = useState('Premium quality authentic fabric directly from Balogun Market.');
   const [formImages, setFormImages] = useState<string[]>([]);
-  const [formFeatures, setFormFeatures] = useState<string>('100% Cotton, 6 Full Yards, Fade-resistant');
-  const [formColors, setFormColors] = useState<string>('Royal Blue, Emerald Green, Gold');
-  const [isUploadingFormImages, setIsUploadingFormImages] = useState(false);
-  const [isSavingProduct, setIsSavingProduct] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState('');
 
-  // Upload images directly inside the Add/Edit Product form
-  const handleFormImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    setIsUploadingFormImages(true);
-    try {
-      const uploadedUrls: string[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const url = await StoreService.uploadImage(files[i]);
-        uploadedUrls.push(url);
-      }
-      setFormImages((prev) => [...prev, ...uploadedUrls]);
-    } catch (err) {
-      console.error('Failed to upload image in form:', err);
-    } finally {
-      setIsUploadingFormImages(false);
-      e.target.value = '';
-    }
-  };
+  // Status & Loading
+  const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
-  const handleRemoveFormImage = (index: number) => {
-    setFormImages((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  // Cloud Sync state
-  const [cloudStatus, setCloudStatus] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  // Handle local image file uploads (with auto-compression)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsProcessingImages(true);
-    setUploadMessage(null);
-
-    const uploadedUrls: string[] = [];
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const uploadedUrl = await StoreService.uploadImage(file);
-        uploadedUrls.push(uploadedUrl);
-      }
-      setNewImageUrls((prev) => [...prev, ...uploadedUrls]);
-      setUploadMessage({
-        text: `Successfully processed ${uploadedUrls.length} image(s)! Click "Save to Product" to publish to all devices.`,
-        type: 'success',
-      });
-    } catch (err) {
-      console.error(err);
-      setUploadMessage({
-        text: 'Error processing image files. Please check file format.',
-        type: 'error',
-      });
-    } finally {
-      setIsProcessingImages(false);
-      // Reset input value so same files can be re-selected if desired
-      e.target.value = '';
-    }
-  };
-
-  const handleAddImageUrl = () => {
-    if (!urlInput.trim()) return;
-    setNewImageUrls((prev) => [...prev, urlInput.trim()]);
-    setUrlInput('');
-  };
-
-  const handleRemoveNewImage = (idx: number) => {
-    setNewImageUrls((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  // Save uploaded images to the selected product
-  const handleSaveImagesToProduct = async () => {
-    if (!selectedProductId) {
-      setUploadMessage({ text: 'Please select a cloth product first.', type: 'error' });
-      return;
-    }
-    if (newImageUrls.length === 0) {
-      setUploadMessage({ text: 'Please upload or add at least one image.', type: 'error' });
-      return;
-    }
-
-    const targetProduct = products.find((p) => p.id === selectedProductId);
-    if (!targetProduct) return;
-
-    const updatedProduct: Product = {
-      ...targetProduct,
-      images: [...newImageUrls, ...(targetProduct.images || [])],
-    };
-
-    const updatedCatalog = await StoreService.saveProduct(updatedProduct);
-    onProductsUpdated(updatedCatalog);
-    setNewImageUrls([]);
-    setUploadMessage({
-      text: `Images successfully uploaded & saved to "${targetProduct.name}"!`,
-      type: 'success',
-    });
-  };
-
-  // Start creating new product
-  const handleStartCreateProduct = () => {
-    setActiveTab('catalog');
-    setEditingId(null);
+  const resetForm = () => {
+    setEditingProductId(null);
     setFormName('');
     setFormCategory('ankara');
     setFormPrice(30000);
-    setFormOriginalPrice(35000);
     setFormUnit('per 6 yards piece');
-    setFormDescription('High-quality authentic fabric directly sourced from Balogun Market.');
-    setFormStock(25);
+    setFormDescription('Premium quality authentic fabric directly from Balogun Market.');
     setFormImages([]);
-    setFormFeatures('100% Premium Cotton, 6 Full Yards, Rich Colors');
-    setFormColors('Blue, Gold, Wine');
-    setIsEditingProduct(true);
+    setImageUrlInput('');
   };
 
-  // Start editing existing product
-  const handleStartEditProduct = (prod: Product) => {
-    setActiveTab('catalog');
-    setEditingId(prod.id);
-    setFormName(prod.name);
-    setFormCategory(prod.category as any);
-    setFormPrice(prod.price);
-    setFormOriginalPrice(prod.originalPrice || prod.price);
-    setFormUnit(prod.unit);
-    setFormDescription(prod.description);
-    setFormStock(prod.stockCount);
-    setFormImages(prod.images || []);
-    setFormFeatures((prod.features || []).join(', '));
-    setFormColors((prod.colors || []).join(', '));
-    setIsEditingProduct(true);
-  };
+  // Handle Photo File Selection (Immediate & Local)
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-  // Save product from form
-  const handleSaveProductForm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formName.trim()) {
-      alert('Please enter a product name');
-      return;
-    }
-
-    setIsSavingProduct(true);
+    setIsProcessingPhotos(true);
+    setFeedbackMessage(null);
 
     try {
-      const categoryLabels: Record<string, string> = {
-        'ankara': 'Ankara Prints',
-        'lace': 'Luxury Lace',
-        'senator-atiku': 'Senator & Atiku',
-        'sewing-machines': 'Sewing Machines & Tools',
-        'accessories': 'Shoes, Bags & Accessories',
-      };
-
-      const productPayload: Product = {
-        id: editingId || generateId('prod'),
-        name: formName.trim(),
-        category: formCategory,
-        categoryLabel: categoryLabels[formCategory] || 'Fabrics',
-        price: Number(formPrice) || 30000,
-        originalPrice: Number(formOriginalPrice) || Number(formPrice) || 35000,
-        unit: formUnit.trim() || 'per 6 yards piece',
-        rating: 5.0,
-        reviewsCount: 12,
-        description: formDescription.trim() || 'Authentic quality product from Balogun Market.',
-        features: formFeatures ? formFeatures.split(',').map((s) => s.trim()).filter(Boolean) : ['Authentic Balogun Quality'],
-        inStock: Number(formStock) > 0,
-        stockCount: Number(formStock) || 15,
-        colors: formColors ? formColors.split(',').map((s) => s.trim()).filter(Boolean) : ['Original Pattern'],
-        images: formImages.length > 0 ? formImages : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'],
-      };
-
-      const updatedList = await StoreService.saveProduct(productPayload);
-      onProductsUpdated(updatedList);
-      setSelectedProductId(productPayload.id);
-      setIsEditingProduct(false);
-      setUploadMessage({
-        text: `Product "${productPayload.name}" saved successfully and published!`,
+      const newUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const compressedUrl = await StoreService.uploadImage(file);
+        if (compressedUrl) {
+          newUrls.push(compressedUrl);
+        }
+      }
+      setFormImages((prev) => [...prev, ...newUrls]);
+      setFeedbackMessage({
+        text: `✓ ${newUrls.length} photo(s) added! Fill details and click "Save & Publish".`,
         type: 'success',
       });
     } catch (err) {
-      console.error('Error saving product:', err);
-      alert('Error saving product. Please check input values.');
+      console.error('Photo processing error:', err);
+      setFeedbackMessage({
+        text: 'Could not process one or more images. Please try another photo.',
+        type: 'error',
+      });
     } finally {
-      setIsSavingProduct(false);
+      setIsProcessingPhotos(false);
+      e.target.value = '';
+    }
+  };
+
+  // Add Image URL manually
+  const handleAddImageUrl = () => {
+    if (!imageUrlInput.trim()) return;
+    setFormImages((prev) => [...prev, imageUrlInput.trim()]);
+    setImageUrlInput('');
+  };
+
+  // Remove Photo from form
+  const handleRemovePhoto = (index: number) => {
+    setFormImages((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  // Save Product (Instant + Syncs to Firestore)
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formName.trim()) {
+      setFeedbackMessage({ text: 'Please enter a product name.', type: 'error' });
+      return;
+    }
+
+    setIsSaving(true);
+    setFeedbackMessage(null);
+
+    const categoryLabels: Record<CategoryId, string> = {
+      'ankara': 'Ankara Prints',
+      'lace': 'Luxury Lace',
+      'senator-atiku': 'Senator & Atiku',
+      'sewing-machines': 'Sewing Machines & Tools',
+      'accessories': 'Shoes, Bags & Accessories',
+    };
+
+    const finalImages = formImages.length > 0 
+      ? formImages 
+      : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'];
+
+    const productPayload: Product = {
+      id: editingProductId || generateId('prod'),
+      name: formName.trim(),
+      category: formCategory,
+      categoryLabel: categoryLabels[formCategory] || 'Fabrics',
+      price: Number(formPrice) || 30000,
+      originalPrice: Math.round((Number(formPrice) || 30000) * 1.15),
+      unit: formUnit.trim() || 'per 6 yards piece',
+      rating: 5.0,
+      reviewsCount: 14,
+      description: formDescription.trim(),
+      features: ['Authentic Balogun Market Quality', '100% Cotton & Pure Weave', 'Colorfast Guarantee'],
+      inStock: true,
+      stockCount: 25,
+      colors: ['Vibrant Multi-Color'],
+      images: finalImages,
+    };
+
+    try {
+      const updatedList = await StoreService.saveProduct(productPayload);
+      onProductsUpdated(updatedList);
+      
+      setFeedbackMessage({
+        text: `✓ "${productPayload.name}" saved and synced to Firebase Cloud!`,
+        type: 'success',
+      });
+
+      // Reset form and switch to catalog view to see it
+      setTimeout(() => {
+        resetForm();
+        setActiveTab('list');
+      }, 700);
+    } catch (err) {
+      console.error('Failed to save product:', err);
+      setFeedbackMessage({
+        text: 'Error saving product. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Delete product
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    const updated = await StoreService.deleteProduct(id);
-    onProductsUpdated(updated);
-  };
-
-  // Test Firestore Connection
-  const handleTestConnection = async () => {
-    setCloudStatus('Testing Firestore connection to database "adebisi-store-live"...');
-    const res = await testFirestoreConnection();
-    setCloudStatus(res.message);
-  };
-
-  // Sync all products to Firestore
-  const handleSyncToFirestore = async () => {
-    setIsSyncing(true);
-    setCloudStatus('Syncing catalog to Firestore database "adebisi-store-live"...');
-    const res = await StoreService.syncAllToFirestore(products);
-    setIsSyncing(false);
-    if (res.success) {
-      setCloudStatus(`Successfully synced ${res.count} products to Firestore!`);
-    } else {
-      setCloudStatus('Sync encountered an issue or client is offline.');
+  const handleDeleteProduct = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove "${name}" from the store?`)) return;
+    try {
+      const updatedList = await StoreService.deleteProduct(id);
+      onProductsUpdated(updatedList);
+      setFeedbackMessage({
+        text: `Product "${name}" deleted.`,
+        type: 'success',
+      });
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  // Export JSON
-  const handleExportJSON = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(products, null, 2));
-    const dlAnchorElem = document.createElement('a');
-    dlAnchorElem.setAttribute('href', dataStr);
-    dlAnchorElem.setAttribute('download', `ayobami_sam_catalog_${new Date().toISOString().slice(0, 10)}.json`);
-    dlAnchorElem.click();
+  // Edit existing product
+  const handleStartEdit = (prod: Product) => {
+    setEditingProductId(prod.id);
+    setFormName(prod.name);
+    setFormCategory(prod.category as CategoryId);
+    setFormPrice(prod.price);
+    setFormUnit(prod.unit);
+    setFormDescription(prod.description);
+    setFormImages(prod.images || []);
+    setActiveTab('add');
+  };
+
+  // Quick photo upload directly for a listed product
+  const handleQuickAddPhotoToListed = async (product: Product, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newPhotos: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const compressed = await StoreService.uploadImage(files[i]);
+      if (compressed) newPhotos.push(compressed);
+    }
+    const updatedProd: Product = {
+      ...product,
+      images: [...newPhotos, ...(product.images || [])],
+    };
+    const updatedList = await StoreService.saveProduct(updatedProd);
+    onProductsUpdated(updatedList);
+    setFeedbackMessage({
+      text: `✓ Added ${newPhotos.length} photo(s) to "${product.name}"!`,
+      type: 'success',
+    });
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-950/70 backdrop-blur-xs overflow-y-auto">
       <div 
-        className="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-stone-200"
+        className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-stone-200 animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
+        {/* Top Header */}
+        <div className="p-4 sm:p-5 bg-stone-900 text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center shadow-xs">
-              <Upload className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-stone-950 flex items-center justify-center font-bold">
+              <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="font-serif font-bold text-base sm:text-lg text-stone-900">
-                Merchant Admin &amp; Cloth Product Uploader
-              </h2>
-              <p className="text-xs text-stone-500">
-                Manage cloth products, attach photos, and sync with Firestore database.
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold">Merchant Store Admin</h2>
+                <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Firebase Cloud Live
+                </span>
+              </div>
+              <p className="text-xs text-stone-400">
+                Easily add cloth photos, set prices, and publish live to all customer devices.
               </p>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 rounded-xl text-stone-400 hover:text-stone-700 hover:bg-stone-200/60 transition-colors"
+            className="p-2 rounded-full hover:bg-stone-800 text-stone-400 hover:text-white transition-colors"
+            title="Close"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-stone-200 px-4 sm:px-6 bg-white gap-2">
+        {/* Navigation Tabs */}
+        <div className="flex border-b border-stone-200 bg-stone-50 px-4 pt-2 gap-2">
           <button
-            onClick={() => setActiveTab('upload')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'upload'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-stone-500 hover:text-stone-900'
+            onClick={() => {
+              if (editingProductId) resetForm();
+              setActiveTab('add');
+            }}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === 'add'
+                ? 'border-amber-600 text-amber-900 bg-white shadow-xs'
+                : 'border-transparent text-stone-600 hover:text-stone-900'
             }`}
           >
-            <ImageIcon className="w-4 h-4" />
-            <span>Upload Images to Cloth Products</span>
+            <Plus className="w-4 h-4 text-amber-600" />
+            <span>{editingProductId ? 'Edit Product' : '＋ Add New Cloth Product'}</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('catalog')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'catalog'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-stone-500 hover:text-stone-900'
+            onClick={() => setActiveTab('list')}
+            className={`px-4 py-2.5 text-xs sm:text-sm font-bold rounded-t-xl transition-all flex items-center gap-2 border-b-2 ${
+              activeTab === 'list'
+                ? 'border-amber-600 text-amber-900 bg-white shadow-xs'
+                : 'border-transparent text-stone-600 hover:text-stone-900'
             }`}
           >
-            <Layers className="w-4 h-4" />
-            <span>Product Catalog ({products.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('cloud')}
-            className={`py-3 px-4 text-xs font-bold border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === 'cloud'
-                ? 'border-amber-600 text-amber-700'
-                : 'border-transparent text-stone-500 hover:text-stone-900'
-            }`}
-          >
-            <Database className="w-4 h-4" />
-            <span>Firebase &amp; Database Sync</span>
+            <Layers className="w-4 h-4 text-amber-600" />
+            <span>Store Inventory ({products.length})</span>
           </button>
         </div>
 
-        {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-          
-          {/* TAB 1: Upload Images to Cloth Products */}
-          {activeTab === 'upload' && (
-            <div className="space-y-6">
-              {uploadMessage && (
-                <div className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 ${
-                  uploadMessage.type === 'success'
-                    ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-                    : 'bg-red-50 text-red-900 border border-red-200'
-                }`}>
-                  {uploadMessage.type === 'success' ? (
-                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-                  )}
-                  <span>{uploadMessage.text}</span>
+        {/* Global Feedback Alert */}
+        {feedbackMessage && (
+          <div className={`mx-4 sm:mx-6 mt-3 p-3 rounded-2xl text-xs font-semibold flex items-center gap-2 ${
+            feedbackMessage.type === 'success' 
+              ? 'bg-emerald-50 text-emerald-900 border border-emerald-200' 
+              : 'bg-red-50 text-red-900 border border-red-200'
+          }`}>
+            {feedbackMessage.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <X className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{feedbackMessage.text}</span>
+          </div>
+        )}
+
+        {/* Body Content */}
+        <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto">
+          {/* TAB 1: ADD / EDIT PRODUCT */}
+          {activeTab === 'add' && (
+            <form onSubmit={handleSaveProduct} className="space-y-4">
+              {/* 1. Convenient Photo Upload Box */}
+              <div className="p-4 rounded-2xl bg-amber-50/80 border-2 border-amber-300 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-amber-700" />
+                    <span>Cloth Photos (Camera / Gallery) *</span>
+                  </label>
+                  <span className="text-[11px] font-semibold text-amber-800 bg-amber-200/70 px-2 py-0.5 rounded-full">
+                    {formImages.length} photo(s) selected
+                  </span>
                 </div>
-              )}
 
-              {/* Step 1: Select Target Product */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
-                  1. Select Cloth Product to receive images:
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <select
-                    value={selectedProductId}
-                    onChange={(e) => setSelectedProductId(e.target.value)}
-                    className="w-full p-3 rounded-xl border border-stone-300 text-xs font-semibold focus:ring-2 focus:ring-amber-500 bg-white"
-                  >
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} — ({p.categoryLabel})
-                      </option>
-                    ))}
-                  </select>
-
-                  <button
-                    onClick={handleStartCreateProduct}
-                    className="p-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-semibold text-xs border border-amber-300 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Plus className="w-4 h-4 text-amber-700" />
-                    <span>Create Brand New Cloth Product</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Step 2: Choose / Drop Images */}
-              <div className="space-y-3">
-                <label className="block text-xs font-bold text-stone-800 uppercase tracking-wider">
-                  2. Choose / Upload Photos (IMG-WA*.jpg, camera, or screenshots):
-                </label>
-
-                {/* Drag and Drop Zone */}
-                <label className="border-2 border-dashed border-amber-300 hover:border-amber-500 bg-amber-50/40 hover:bg-amber-50/80 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all">
-                  <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 mb-2">
-                    <Upload className="w-6 h-6" />
+                {/* Big Drag / Click Uploader */}
+                <label className="border-2 border-dashed border-amber-400 hover:border-amber-600 bg-white hover:bg-amber-100/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-xs group">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-800 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    {isProcessingPhotos ? (
+                      <Loader2 className="w-6 h-6 animate-spin text-amber-700" />
+                    ) : (
+                      <Upload className="w-6 h-6 text-amber-700" />
+                    )}
                   </div>
-                  <span className="font-semibold text-xs sm:text-sm text-stone-900">
-                    Click to browse or drag and drop WhatsApp cloth photos here
+                  <span className="font-bold text-xs sm:text-sm text-stone-900">
+                    {isProcessingPhotos ? 'Processing Photos...' : 'Tap to Upload Cloth Photos (Camera / Phone Gallery)'}
                   </span>
                   <span className="text-[11px] text-stone-500 mt-1">
-                    Supports multiple files (JPG, PNG, WebP). Automatically resized &amp; optimized for rapid loading.
+                    Select one or multiple photos from your device. They will be saved to your live store.
                   </span>
                   <input
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={handleFileUpload}
+                    onChange={handlePhotoSelect}
+                    disabled={isProcessingPhotos}
                     className="hidden"
                   />
                 </label>
 
-                {/* Direct URL input alternative */}
-                <div className="flex gap-2">
+                {/* Thumbnail Previews */}
+                {formImages.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    <span className="text-[10px] text-stone-500 font-semibold block">
+                      Selected Photos (First photo will be the main cover):
+                    </span>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5">
+                      {formImages.map((img, idx) => (
+                        <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-stone-300 shadow-xs group">
+                          <img src={img} alt="" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(idx)}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white shadow-xs hover:scale-110 transition-transform"
+                            title="Remove photo"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          {idx === 0 && (
+                            <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-stone-900/80 text-[8px] font-bold text-amber-300">
+                              Cover
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Or paste link option */}
+                <div className="flex items-center gap-2 pt-1 text-xs">
                   <input
                     type="url"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="Or paste an image web URL here..."
-                    className="flex-1 p-2.5 rounded-xl border border-stone-300 text-xs focus:ring-2 focus:ring-amber-500"
+                    value={imageUrlInput}
+                    onChange={(e) => setImageUrlInput(e.target.value)}
+                    placeholder="Or paste an image web link here..."
+                    className="flex-1 p-2 rounded-xl border border-stone-300 text-xs bg-white"
                   />
                   <button
                     type="button"
                     onClick={handleAddImageUrl}
-                    className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-xs"
+                    className="px-3 py-2 rounded-xl bg-stone-800 text-white font-semibold text-xs hover:bg-stone-700"
                   >
-                    Add URL
+                    Add Link
                   </button>
                 </div>
               </div>
 
-              {/* Step 3: Pending Images Preview & Action */}
-              {newImageUrls.length > 0 && (
-                <div className="space-y-3 p-4 rounded-2xl bg-stone-50 border border-stone-200">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-stone-800">
-                      Pending Images to be uploaded ({newImageUrls.length}):
-                    </span>
-                    <button
-                      onClick={() => setNewImageUrls([])}
-                      className="text-stone-400 hover:text-red-600 text-[11px]"
-                    >
-                      Clear all
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                    {newImageUrls.map((url, idx) => (
-                      <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-stone-300 group">
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                        <button
-                          onClick={() => handleRemoveNewImage(idx)}
-                          className="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white shadow-xs opacity-80 hover:opacity-100 transition-opacity"
-                          title="Remove photo"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleSaveImagesToProduct}
-                    disabled={isProcessingImages}
-                    className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Save {newImageUrls.length} Image(s) to Selected Product</span>
-                  </button>
+              {/* 2. Product Name & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">
+                    Cloth / Product Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    placeholder="e.g. Original Hollandais Wax Ankara"
+                    className="w-full p-2.5 rounded-xl border border-stone-300 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-xs"
+                  />
                 </div>
-              )}
-            </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">
+                    Store Category *
+                  </label>
+                  <select
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value as CategoryId)}
+                    className="w-full p-2.5 rounded-xl border border-stone-300 bg-white text-xs focus:border-amber-500"
+                  >
+                    <option value="ankara">Ankara Prints</option>
+                    <option value="lace">Luxury Lace</option>
+                    <option value="senator-atiku">Senator &amp; Atiku</option>
+                    <option value="sewing-machines">Sewing Machines &amp; Tools</option>
+                    <option value="accessories">Shoes, Bags &amp; Accessories</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">
+                    Price in Naira (₦) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(Number(e.target.value))}
+                    className="w-full p-2.5 rounded-xl border border-stone-300 text-xs focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-stone-800 mb-1">
+                    Yard Measurement / Unit *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formUnit}
+                    onChange={(e) => setFormUnit(e.target.value)}
+                    placeholder="e.g. per 6 yards piece"
+                    className="w-full p-2.5 rounded-xl border border-stone-300 text-xs focus:border-amber-500"
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block font-bold text-stone-800 text-xs mb-1">
+                  Description / Notes
+                </label>
+                <textarea
+                  rows={2}
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full p-2.5 rounded-xl border border-stone-300 text-xs focus:border-amber-500"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-stone-200">
+                {editingProductId && (
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
+                      <span>Saving &amp; Syncing to Cloud...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>{editingProductId ? 'Update Product' : '✓ Save & Publish to Website'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           )}
 
-          {/* TAB 2: Product Catalog & CRUD */}
-          {activeTab === 'catalog' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-stone-500">
-                  Manage all products currently in store catalog.
+          {/* TAB 2: STORE INVENTORY LIST */}
+          {activeTab === 'list' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between pb-1">
+                <span className="text-xs text-stone-500 font-medium">
+                  Showing all products in your store catalog.
                 </span>
                 <button
-                  onClick={handleStartCreateProduct}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm"
+                  onClick={() => {
+                    resetForm();
+                    setActiveTab('add');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-amber-700 shadow-xs"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>Add Product</span>
                 </button>
               </div>
 
-              {isEditingProduct ? (
-                /* Form to Add / Edit Product */
-                <form onSubmit={handleSaveProductForm} className="p-4 sm:p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="font-bold text-stone-900 text-sm">
-                      {editingId ? 'Edit Product' : 'Create New Cloth / Equipment Product'}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingProduct(false)}
-                      className="text-stone-400 hover:text-stone-600"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Product Name *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Original Hollandais Wax Ankara"
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Category *</label>
-                      <select
-                        value={formCategory}
-                        onChange={(e) => setFormCategory(e.target.value as any)}
-                        className="w-full p-2 rounded-lg border border-stone-300 bg-white"
-                      >
-                        <option value="ankara">Ankara Prints</option>
-                        <option value="lace">Luxury Lace</option>
-                        <option value="senator-atiku">Senator &amp; Atiku</option>
-                        <option value="sewing-machines">Sewing Machines &amp; Tools</option>
-                        <option value="accessories">Shoes, Bags &amp; Accessories</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Price (NGN ₦) *</label>
-                      <input
-                        type="number"
-                        required
-                        value={formPrice}
-                        onChange={(e) => setFormPrice(Number(e.target.value))}
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Original Price (Strikeout ₦)</label>
-                      <input
-                        type="number"
-                        value={formOriginalPrice}
-                        onChange={(e) => setFormOriginalPrice(Number(e.target.value))}
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Unit Description *</label>
-                      <input
-                        type="text"
-                        required
-                        value={formUnit}
-                        onChange={(e) => setFormUnit(e.target.value)}
-                        placeholder="e.g. per 6 yards piece"
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Stock Quantity</label>
-                      <input
-                        type="number"
-                        value={formStock}
-                        onChange={(e) => setFormStock(Number(e.target.value))}
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Direct Images Upload inside Add/Edit Product Form */}
-                  <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="block font-bold text-stone-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
-                        <Camera className="w-4 h-4 text-amber-700" />
-                        <span>Product Photos / Cloth Images *</span>
-                      </label>
-                      <span className="text-[11px] font-semibold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-full">
-                        {formImages.length} {formImages.length === 1 ? 'photo' : 'photos'} attached
-                      </span>
-                    </div>
-
-                    {/* Drag and Drop / Choose File button */}
-                    <label className="border-2 border-dashed border-amber-400 hover:border-amber-600 bg-white hover:bg-amber-50/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-xs">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 mb-1.5">
-                        {isUploadingFormImages ? (
-                          <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
-                        ) : (
-                          <Upload className="w-5 h-5" />
-                        )}
-                      </div>
-                      <span className="font-bold text-xs text-stone-900">
-                        {isUploadingFormImages ? 'Uploading & Optimizing...' : 'Click to Upload Cloth Photos (IMG-*.jpg, Phone Camera, Gallery)'}
-                      </span>
-                      <span className="text-[10px] text-stone-500 mt-0.5">
-                        Select 1 or multiple photos from your device to attach to this product
-                      </span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={handleFormImagesUpload}
-                        disabled={isUploadingFormImages}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {/* Attached Photos Grid Preview */}
-                    {formImages.length > 0 && (
-                      <div className="pt-1 space-y-1">
-                        <span className="text-[10px] text-stone-500 font-medium block">
-                          Preview of photos that will be published (First photo is main cover):
-                        </span>
-                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                          {formImages.map((imgUrl, idx) => (
-                            <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-stone-300 group shadow-xs">
-                              <img src={imgUrl} alt="" className="w-full h-full object-cover" />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveFormImage(idx)}
-                                className="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white shadow-xs opacity-90 hover:opacity-100 hover:scale-110 transition-all"
-                                title="Remove photo"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                              {idx === 0 && (
-                                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-stone-900/80 text-[8px] font-bold text-amber-300">
-                                  Cover
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-stone-700 text-xs mb-1">Description</label>
-                    <textarea
-                      rows={2}
-                      value={formDescription}
-                      onChange={(e) => setFormDescription(e.target.value)}
-                      className="w-full p-2 rounded-lg border border-stone-300 text-xs"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Colors (comma separated)</label>
-                      <input
-                        type="text"
-                        value={formColors}
-                        onChange={(e) => setFormColors(e.target.value)}
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-stone-700 mb-1">Features (comma separated)</label>
-                      <input
-                        type="text"
-                        value={formFeatures}
-                        onChange={(e) => setFormFeatures(e.target.value)}
-                        className="w-full p-2 rounded-lg border border-stone-300"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingProduct(false)}
-                      className="px-4 py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-semibold transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={isSavingProduct}
-                      className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
-                    >
-                      {isSavingProduct ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
-                          <span>Saving &amp; Publishing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span>Save &amp; Publish Product</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                /* Products list */
-                <div className="divide-y divide-stone-100 border rounded-2xl overflow-hidden">
-                  {products.map((p) => {
-                    const img = p.images?.[0] || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=200&q=80';
-                    return (
-                      <div key={p.id} className="p-3 sm:p-4 flex items-center justify-between gap-3 hover:bg-stone-50">
-                        <div className="flex items-center gap-3">
-                          <img src={img} alt="" className="w-12 h-12 rounded-xl object-cover border" />
-                          <div>
-                            <div className="font-semibold text-xs sm:text-sm text-stone-900 line-clamp-1">
-                              {p.name}
-                            </div>
-                            <div className="text-[11px] text-stone-500">
-                              {formatNaira(p.price)} • {p.categoryLabel} • {p.images?.length || 0} images • Stock: {p.stockCount}
-                            </div>
+              <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden bg-white">
+                {products.map((prod) => {
+                  const primaryImg = prod.images?.[0] || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=200&q=80';
+                  return (
+                    <div key={prod.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50/70 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={primaryImg} 
+                          alt="" 
+                          className="w-14 h-14 rounded-xl object-cover border border-stone-200 shrink-0" 
+                        />
+                        <div>
+                          <h4 className="font-bold text-xs sm:text-sm text-stone-900">
+                            {prod.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs text-stone-500 mt-0.5">
+                            <span className="font-bold text-amber-900 font-serif">
+                              {formatNaira(prod.price)}
+                            </span>
+                            <span>•</span>
+                            <span className="text-[11px] bg-stone-100 px-2 py-0.5 rounded-md font-medium">
+                              {prod.categoryLabel}
+                            </span>
+                            <span>•</span>
+                            <span className="text-[11px] text-stone-400">
+                              {prod.images?.length || 0} photo(s)
+                            </span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => handleStartEditProduct(p)}
-                            className="p-2 rounded-lg text-stone-500 hover:text-amber-800 hover:bg-amber-50"
-                            title="Edit"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteProduct(p.id)}
-                            className="p-2 rounded-lg text-stone-400 hover:text-red-600 hover:bg-red-50"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* TAB 3: Firebase & Database Sync */}
-          {activeTab === 'cloud' && (
-            <div className="space-y-6">
-              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs space-y-2">
-                <div className="flex items-center gap-2 font-bold text-amber-950">
-                  <Database className="w-4 h-4 text-amber-700" />
-                  <span>Configured Firebase Project</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-stone-700">
-                  <div><strong>Project ID:</strong> {firebaseConfig.projectId}</div>
-                  <div><strong>Firestore DB:</strong> {firebaseConfig.firestoreDatabaseId || 'adebisi-store-live'}</div>
-                  <div><strong>Storage Bucket:</strong> {firebaseConfig.storageBucket}</div>
-                  <div><strong>Auth Domain:</strong> {firebaseConfig.authDomain}</div>
-                </div>
-              </div>
+                      {/* Action buttons on product row */}
+                      <div className="flex items-center gap-2 self-end sm:self-center">
+                        {/* Quick Add Photo */}
+                        <label 
+                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                          title="Attach more photos to this cloth"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-amber-700" />
+                          <span>+ Photo</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleQuickAddPhotoToListed(prod, e.target.files)}
+                          />
+                        </label>
 
-              {cloudStatus && (
-                <div className="p-3 rounded-xl bg-stone-100 border text-xs text-stone-800 flex items-center gap-2">
-                  <Cloud className="w-4 h-4 text-amber-600" />
-                  <span>{cloudStatus}</span>
-                </div>
-              )}
+                        {/* Edit Details */}
+                        <button
+                          onClick={() => handleStartEdit(prod)}
+                          className="px-2.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors"
+                        >
+                          Edit
+                        </button>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={handleTestConnection}
-                  className="p-4 rounded-2xl border border-stone-200 hover:border-amber-400 bg-white hover:bg-stone-50 text-left text-xs transition-all"
-                >
-                  <div className="font-bold text-stone-900 mb-1 flex items-center gap-1.5">
-                    <RefreshCw className="w-4 h-4 text-amber-700" />
-                    <span>Test Firestore Connection</span>
-                  </div>
-                  <div className="text-stone-500">
-                    Verify that your app connects to database instance <strong>adebisi-store-live</strong>.
-                  </div>
-                </button>
-
-                <button
-                  onClick={handleSyncToFirestore}
-                  disabled={isSyncing}
-                  className="p-4 rounded-2xl border border-stone-200 hover:border-amber-400 bg-white hover:bg-stone-50 text-left text-xs transition-all"
-                >
-                  <div className="font-bold text-stone-900 mb-1 flex items-center gap-1.5">
-                    <Cloud className="w-4 h-4 text-amber-700" />
-                    <span>{isSyncing ? 'Syncing...' : 'Sync All Products to Firestore'}</span>
-                  </div>
-                  <div className="text-stone-500">
-                    Push the full catalog of {products.length} products to the cloud database.
-                  </div>
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3">
-                <button
-                  onClick={handleExportJSON}
-                  className="px-4 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white font-semibold text-xs flex items-center gap-2 shadow-xs"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Download Backup (JSON)</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (confirm('Reset store catalog to standard initial Balogun market collection?')) {
-                      const initial = StoreService.resetToDefault();
-                      onProductsUpdated(initial);
-                    }
-                  }}
-                  className="px-4 py-2.5 rounded-xl text-stone-600 hover:text-red-700 text-xs font-semibold"
-                >
-                  Reset Catalog to Default
-                </button>
+                        {/* Delete */}
+                        <button
+                          onClick={() => handleDeleteProduct(prod.id, prod.name)}
+                          className="p-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
+                          title="Delete Product"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
+        </div>
 
+        {/* Bottom Cloud Footer */}
+        <div className="p-3 bg-stone-100 border-t border-stone-200 text-stone-600 text-[11px] flex items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Database: <strong>{firebaseConfig.firestoreDatabaseId || 'adebisi-store-live'}</strong></span>
+          </div>
+          <span className="text-stone-400 hidden sm:inline">All changes sync automatically across all devices</span>
         </div>
       </div>
     </div>
