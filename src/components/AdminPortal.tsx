@@ -15,7 +15,9 @@ import {
   FolderOpen,
   Sparkles,
   Layers,
-  Database
+  Database,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira, generateId } from '../utils/formatters';
@@ -62,6 +64,32 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   const [formImages, setFormImages] = useState<string[]>([]);
   const [formFeatures, setFormFeatures] = useState<string>('100% Cotton, 6 Full Yards, Fade-resistant');
   const [formColors, setFormColors] = useState<string>('Royal Blue, Emerald Green, Gold');
+  const [isUploadingFormImages, setIsUploadingFormImages] = useState(false);
+  const [isSavingProduct, setIsSavingProduct] = useState(false);
+
+  // Upload images directly inside the Add/Edit Product form
+  const handleFormImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setIsUploadingFormImages(true);
+    try {
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const url = await StoreService.uploadImage(files[i]);
+        uploadedUrls.push(url);
+      }
+      setFormImages((prev) => [...prev, ...uploadedUrls]);
+    } catch (err) {
+      console.error('Failed to upload image in form:', err);
+    } finally {
+      setIsUploadingFormImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleRemoveFormImage = (index: number) => {
+    setFormImages((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Cloud Sync state
   const [cloudStatus, setCloudStatus] = useState<string | null>(null);
@@ -140,6 +168,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Start creating new product
   const handleStartCreateProduct = () => {
+    setActiveTab('catalog');
     setEditingId(null);
     setFormName('');
     setFormCategory('ankara');
@@ -156,6 +185,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
   // Start editing existing product
   const handleStartEditProduct = (prod: Product) => {
+    setActiveTab('catalog');
     setEditingId(prod.id);
     setFormName(prod.name);
     setFormCategory(prod.category as any);
@@ -173,37 +203,54 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Save product from form
   const handleSaveProductForm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formName.trim()) return;
+    if (!formName.trim()) {
+      alert('Please enter a product name');
+      return;
+    }
 
-    const categoryLabels: Record<string, string> = {
-      'ankara': 'Ankara Prints',
-      'lace': 'Luxury Lace',
-      'senator-atiku': 'Senator & Atiku',
-      'sewing-machines': 'Sewing Machines & Tools',
-      'accessories': 'Shoes, Bags & Accessories',
-    };
+    setIsSavingProduct(true);
 
-    const productPayload: Product = {
-      id: editingId || generateId('prod'),
-      name: formName,
-      category: formCategory,
-      categoryLabel: categoryLabels[formCategory] || 'Fabrics',
-      price: Number(formPrice),
-      originalPrice: Number(formOriginalPrice),
-      unit: formUnit,
-      rating: 5.0,
-      reviewsCount: 12,
-      description: formDescription,
-      features: formFeatures.split(',').map((s) => s.trim()).filter(Boolean),
-      inStock: formStock > 0,
-      stockCount: Number(formStock),
-      colors: formColors.split(',').map((s) => s.trim()).filter(Boolean),
-      images: formImages.length > 0 ? formImages : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'],
-    };
+    try {
+      const categoryLabels: Record<string, string> = {
+        'ankara': 'Ankara Prints',
+        'lace': 'Luxury Lace',
+        'senator-atiku': 'Senator & Atiku',
+        'sewing-machines': 'Sewing Machines & Tools',
+        'accessories': 'Shoes, Bags & Accessories',
+      };
 
-    const updatedList = await StoreService.saveProduct(productPayload);
-    onProductsUpdated(updatedList);
-    setIsEditingProduct(false);
+      const productPayload: Product = {
+        id: editingId || generateId('prod'),
+        name: formName.trim(),
+        category: formCategory,
+        categoryLabel: categoryLabels[formCategory] || 'Fabrics',
+        price: Number(formPrice) || 30000,
+        originalPrice: Number(formOriginalPrice) || Number(formPrice) || 35000,
+        unit: formUnit.trim() || 'per 6 yards piece',
+        rating: 5.0,
+        reviewsCount: 12,
+        description: formDescription.trim() || 'Authentic quality product from Balogun Market.',
+        features: formFeatures ? formFeatures.split(',').map((s) => s.trim()).filter(Boolean) : ['Authentic Balogun Quality'],
+        inStock: Number(formStock) > 0,
+        stockCount: Number(formStock) || 15,
+        colors: formColors ? formColors.split(',').map((s) => s.trim()).filter(Boolean) : ['Original Pattern'],
+        images: formImages.length > 0 ? formImages : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'],
+      };
+
+      const updatedList = await StoreService.saveProduct(productPayload);
+      onProductsUpdated(updatedList);
+      setSelectedProductId(productPayload.id);
+      setIsEditingProduct(false);
+      setUploadMessage({
+        text: `Product "${productPayload.name}" saved successfully and published!`,
+        type: 'success',
+      });
+    } catch (err) {
+      console.error('Error saving product:', err);
+      alert('Error saving product. Please check input values.');
+    } finally {
+      setIsSavingProduct(false);
+    }
   };
 
   // Delete product
@@ -551,6 +598,73 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     </div>
                   </div>
 
+                  {/* Direct Images Upload inside Add/Edit Product Form */}
+                  <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-50/70 border border-amber-300 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-bold text-stone-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <Camera className="w-4 h-4 text-amber-700" />
+                        <span>Product Photos / Cloth Images *</span>
+                      </label>
+                      <span className="text-[11px] font-semibold text-amber-900 bg-amber-200/80 px-2 py-0.5 rounded-full">
+                        {formImages.length} {formImages.length === 1 ? 'photo' : 'photos'} attached
+                      </span>
+                    </div>
+
+                    {/* Drag and Drop / Choose File button */}
+                    <label className="border-2 border-dashed border-amber-400 hover:border-amber-600 bg-white hover:bg-amber-50/50 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-xs">
+                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 mb-1.5">
+                        {isUploadingFormImages ? (
+                          <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                        ) : (
+                          <Upload className="w-5 h-5" />
+                        )}
+                      </div>
+                      <span className="font-bold text-xs text-stone-900">
+                        {isUploadingFormImages ? 'Uploading & Optimizing...' : 'Click to Upload Cloth Photos (IMG-*.jpg, Phone Camera, Gallery)'}
+                      </span>
+                      <span className="text-[10px] text-stone-500 mt-0.5">
+                        Select 1 or multiple photos from your device to attach to this product
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleFormImagesUpload}
+                        disabled={isUploadingFormImages}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Attached Photos Grid Preview */}
+                    {formImages.length > 0 && (
+                      <div className="pt-1 space-y-1">
+                        <span className="text-[10px] text-stone-500 font-medium block">
+                          Preview of photos that will be published (First photo is main cover):
+                        </span>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                          {formImages.map((imgUrl, idx) => (
+                            <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-stone-300 group shadow-xs">
+                              <img src={imgUrl} alt="" className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFormImage(idx)}
+                                className="absolute top-1 right-1 p-1 rounded-full bg-red-600 text-white shadow-xs opacity-90 hover:opacity-100 hover:scale-110 transition-all"
+                                title="Remove photo"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                              {idx === 0 && (
+                                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-stone-900/80 text-[8px] font-bold text-amber-300">
+                                  Cover
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div>
                     <label className="block font-semibold text-stone-700 text-xs mb-1">Description</label>
                     <textarea
@@ -586,15 +700,26 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsEditingProduct(false)}
-                      className="px-4 py-2 rounded-xl bg-stone-200 text-stone-800 text-xs font-semibold"
+                      className="px-4 py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-semibold transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+                      disabled={isSavingProduct}
+                      className="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-2 active:scale-95 disabled:opacity-50"
                     >
-                      Save Product
+                      {isSavingProduct ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
+                          <span>Saving &amp; Publishing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4" />
+                          <span>Save &amp; Publish Product</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>

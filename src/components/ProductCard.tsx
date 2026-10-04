@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Star, 
   ShoppingBag, 
@@ -6,7 +6,9 @@ import {
   MessageCircle, 
   Check, 
   Sparkles,
-  Maximize2
+  Maximize2,
+  Camera,
+  Loader2
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira } from '../utils/formatters';
@@ -17,6 +19,7 @@ interface ProductCardProps {
   onSelect: (product: Product) => void;
   onAddToCart: (product: Product) => void;
   onOpenLightbox?: (imageUrl: string, title: string) => void;
+  onUploadImage?: (product: Product, files: FileList) => Promise<void>;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -24,7 +27,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   onSelect,
   onAddToCart,
   onOpenLightbox,
+  onUploadImage,
 }) => {
+  const [isUploading, setIsUploading] = useState(false);
   const primaryImage = product.images && product.images.length > 0
     ? product.images[0]
     : 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80';
@@ -39,6 +44,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       `Hello Ayobami SAM Venture, I want to purchase:\n*${product.name}*\nPrice: ${formatNaira(product.price)} (${product.unit})\nSKU: ${product.sku || 'N/A'}\nPlease confirm availability and delivery dispatch.`
     );
     window.open(`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}?text=${message}`, '_blank');
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    if (!e.target.files || e.target.files.length === 0 || !onUploadImage) return;
+    setIsUploading(true);
+    try {
+      await onUploadImage(product, e.target.files);
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
   };
 
   return (
@@ -78,6 +95,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
 
+        {/* Direct In-Place Upload Sign / Button */}
+        {onUploadImage && (
+          <label
+            onClick={(e) => e.stopPropagation()}
+            className="absolute bottom-2.5 left-2.5 z-20 px-2.5 py-1.5 rounded-xl bg-stone-900/85 hover:bg-amber-600 text-white text-[11px] font-semibold backdrop-blur-xs shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+            title="Upload photo directly to this product"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <Camera className="w-3.5 h-3.5 text-amber-300" />
+                <span>+ Upload Photo</span>
+              </>
+            )}
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+              disabled={isUploading}
+            />
+          </label>
+        )}
+
         {/* Multiple Images Counter */}
         {product.images && product.images.length > 1 && (
           <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-stone-900/70 text-white backdrop-blur-xs">
@@ -92,7 +138,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               e.stopPropagation();
               onOpenLightbox(primaryImage, product.name);
             }}
-            className="absolute bottom-2.5 right-2.5 p-2 rounded-xl bg-white/90 text-stone-800 hover:text-amber-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110"
+            className="absolute bottom-2.5 right-2.5 p-2 rounded-xl bg-white/90 text-stone-800 hover:text-amber-700 shadow-md opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-10"
             title="View Fullscreen"
           >
             <Maximize2 className="w-3.5 h-3.5" />

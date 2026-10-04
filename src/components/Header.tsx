@@ -9,7 +9,8 @@ import {
   Phone, 
   MapPin, 
   Sparkles,
-  MessageCircle
+  MessageCircle,
+  Camera
 } from 'lucide-react';
 import { STORE_INFO, CATEGORIES } from '../data/initialData';
 import { CategoryId } from '../types';
@@ -122,14 +123,14 @@ export const Header: React.FC<HeaderProps> = ({
               <span>Yard Estimator</span>
             </button>
 
-            {/* Admin Portal Button */}
+            {/* Direct Upload Photos & Admin Button */}
             <button
               onClick={onOpenAdmin}
-              className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-stone-700 hover:text-amber-800 bg-stone-100 hover:bg-stone-200/80 rounded-xl border border-stone-200 transition-colors flex items-center gap-1.5"
-              title="Manage Products & Upload Images"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-all active:scale-95 border border-amber-500/40"
+              title="Add Cloth Product & Upload Photos"
             >
-              <Settings className="w-4 h-4 text-stone-600" />
-              <span className="hidden sm:inline">Admin / Uploads</span>
+              <Camera className="w-4 h-4 text-stone-950" />
+              <span>+ Upload Photos</span>
             </button>
 
             {/* Cart Button */}

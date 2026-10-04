@@ -10,7 +10,11 @@ import {
   Maximize2,
   ChevronLeft,
   ChevronRight,
-  Info
+  Info,
+  Camera,
+  Plus,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { Product } from '../types';
 import { formatNaira } from '../utils/formatters';
@@ -21,6 +25,8 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number, selectedColor?: string) => void;
   onOpenLightbox?: (imageUrl: string, title: string) => void;
+  onUploadImage?: (product: Product, files: FileList) => Promise<void>;
+  onDeleteImage?: (product: Product, imageIndex: number) => Promise<void>;
 }
 
 export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -28,6 +34,8 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   onAddToCart,
   onOpenLightbox,
+  onUploadImage,
+  onDeleteImage,
 }) => {
   if (!product) return null;
 
@@ -37,12 +45,40 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     product.colors && product.colors.length > 0 ? product.colors[0] : undefined
   );
   const [addedNotice, setAddedNotice] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadFeedback, setUploadFeedback] = useState<string | null>(null);
 
   const images = product.images && product.images.length > 0
     ? product.images
     : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'];
 
   const currentImage = images[activeImageIndex] || images[0];
+
+  const handleUploadFiles = async (files: FileList) => {
+    if (!files || files.length === 0 || !onUploadImage) return;
+    setIsUploading(true);
+    setUploadFeedback('Uploading & syncing photo to live cloud...');
+    try {
+      await onUploadImage(product, files);
+      setUploadFeedback('Photo added successfully!');
+      setTimeout(() => setUploadFeedback(null), 2500);
+    } catch (e) {
+      setUploadFeedback('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteImageAt = async (idx: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onDeleteImage) return;
+    if (confirm('Remove this photo from this product?')) {
+      await onDeleteImage(product, idx);
+      if (activeImageIndex >= idx && activeImageIndex > 0) {
+        setActiveImageIndex(activeImageIndex - 1);
+      }
+    }
+  };
 
   const handleAddToCart = () => {
     onAddToCart(product, quantity, selectedColor);
@@ -72,7 +108,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2.5 rounded-full bg-stone-900/60 hover:bg-stone-900 text-white transition-all hover:scale-105"
+          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-stone-900/60 hover:bg-stone-900 text-white transition-all hover:scale-105"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
@@ -81,19 +117,60 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4 sm:p-8">
           {/* Left Column: Image Gallery */}
           <div className="md:col-span-6 space-y-3">
+            {/* Feedback alert */}
+            {uploadFeedback && (
+              <div className="p-2.5 rounded-xl bg-amber-100 text-amber-900 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
+                <Check className="w-4 h-4 text-emerald-600" />
+                <span>{uploadFeedback}</span>
+              </div>
+            )}
+
             {/* Main Image Stage */}
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200">
+            <div className="relative aspect-square rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 group">
               <img
                 src={currentImage}
                 alt={product.name}
                 className="w-full h-full object-cover transition-all duration-300"
               />
 
+              {/* Direct In-Place Upload Sign / Camera Button on top */}
+              {onUploadImage && (
+                <label 
+                  className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-lg cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+                  title="Upload or add more photos to this cloth"
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-4 h-4" />
+                      <span>+ Upload Photos</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    className="hidden" 
+                    disabled={isUploading}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleUploadFiles(e.target.files);
+                        e.target.value = '';
+                      }
+                    }} 
+                  />
+                </label>
+              )}
+
               {/* Lightbox Trigger */}
               {onOpenLightbox && (
                 <button
                   onClick={() => onOpenLightbox(currentImage, product.name)}
-                  className="absolute bottom-3 right-3 p-2.5 rounded-xl bg-white/90 text-stone-800 hover:text-amber-700 shadow-md transition-all hover:scale-110"
+                  className="absolute bottom-3 right-3 p-2.5 rounded-xl bg-white/90 text-stone-800 hover:text-amber-700 shadow-md transition-all hover:scale-110 z-10"
                   title="Expand Fullscreen"
                 >
                   <Maximize2 className="w-4 h-4" />
@@ -105,13 +182,13 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                 <>
                   <button
                     onClick={() => setActiveImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white transition-colors"
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white transition-colors z-10"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setActiveImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white transition-colors"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white transition-colors z-10"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -119,20 +196,46 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
               )}
 
               {discountPercent > 0 && (
-                <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow-sm">
+                <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow-sm z-10">
                   Save {discountPercent}%
                 </div>
               )}
             </div>
 
-            {/* Thumbnails list */}
-            {images.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                {images.map((img, idx) => (
+            {/* Thumbnails row with "+ Add Photo" button */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
+              {/* Direct Add Photo Tile */}
+              {onUploadImage && (
+                <label className="relative w-16 h-16 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50/80 hover:bg-amber-100 flex flex-col items-center justify-center text-amber-900 cursor-pointer shrink-0 transition-all hover:scale-105 active:scale-95 shadow-xs">
+                  {isUploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                  ) : (
+                    <>
+                      <Plus className="w-5 h-5 text-amber-700" />
+                      <span className="text-[10px] font-bold mt-0.5">Add Photo</span>
+                    </>
+                  )}
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    className="hidden" 
+                    disabled={isUploading}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleUploadFiles(e.target.files);
+                        e.target.value = '';
+                      }
+                    }} 
+                  />
+                </label>
+              )}
+
+              {images.map((img, idx) => (
+                <div key={idx} className="relative group shrink-0">
                   <button
-                    key={idx}
                     onClick={() => setActiveImageIndex(idx)}
-                    className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all block ${
                       idx === activeImageIndex
                         ? 'border-amber-600 scale-105 shadow-md'
                         : 'border-stone-200 hover:border-amber-400 opacity-70 hover:opacity-100'
@@ -140,9 +243,18 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" />
                   </button>
-                ))}
-              </div>
-            )}
+                  {onDeleteImage && images.length > 1 && (
+                    <button
+                      onClick={(e) => handleDeleteImageAt(idx, e)}
+                      className="absolute -top-1.5 -right-1.5 p-1 rounded-full bg-red-600 text-white shadow-xs opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                      title="Remove this photo"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Right Column: Details & Actions */}

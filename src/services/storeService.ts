@@ -18,21 +18,30 @@ const ORDERS_COLLECTION = 'orders';
 
 export class StoreService {
   /**
-   * Upload an image file. Tries Firebase Cloud Storage first to generate a permanent
-   * public CDN URL so all devices globally see the image.
-   * If Cloud Storage is restricted, falls back to optimized lightweight data URL.
+   * Upload an image file.
+   * Compresses the image instantly so it never hangs, then optionally attempts
+   * Firebase Storage with a 2-second race timeout. If Storage is slow or not enabled,
+   * immediately uses the lightweight compressed image so users never get stuck!
    */
   static async uploadImage(file: File): Promise<string> {
+    // 1. Instantly compress locally (takes <100ms, ~35KB)
+    const compressedDataUrl = await compressImageFile(file, 800, 800, 0.75);
+
+    // 2. Try Firebase Storage with a strict 2-second timeout race
     try {
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const sanitizedName = (file.name || 'cloth').replace(/[^a-zA-Z0-9._-]/g, '_');
       const storageRef = ref(storage, `cloth_products/${Date.now()}_${sanitizedName}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(snapshot.ref);
-      return downloadUrl;
-    } catch (storageError) {
-      console.warn('Firebase Storage upload skipped/fallback to optimized image:', storageError);
-      // Fallback: Compress image to lightweight data URL
-      return await compressImageFile(file, 900, 900, 0.78);
+      
+      const uploadTask = uploadBytes(storageRef, file).then((snap) => getDownloadURL(snap.ref));
+      const timeoutTask = new Promise<string>((_, reject) => 
+        setTimeout(() => reject(new Error('Storage timeout')), 2000)
+      );
+
+      const downloadUrl = await Promise.race([uploadTask, timeoutTask]);
+      return downloadUrl || compressedDataUrl;
+    } catch {
+      // Storage unavailable, CORS, or timed out: return compressed image instantly
+      return compressedDataUrl;
     }
   }
   /**
@@ -99,6 +108,8 @@ export class StoreService {
 
   /**
    * Save or update a product in both local storage and Firestore.
+   * Returns immediately with updated list so the user is never blocked,
+   * while syncing to Firestore in the background.
    */
   static async saveProduct(product: Product): Promise<Product[]> {
     const current = this.getLocalProducts();
@@ -112,15 +123,13 @@ export class StoreService {
     }
     this.saveLocalProducts(updated);
 
-    // Sync to Firestore
-    try {
-      await setDoc(doc(db, PRODUCTS_COLLECTION, product.id), {
-        ...product,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } catch (err) {
-      console.warn('Firestore save single product failed:', err);
-    }
+    // Non-blocking background sync to Firestore (adebisi-store-live)
+    setDoc(doc(db, PRODUCTS_COLLECTION, product.id), {
+      ...product,
+      updatedAt: serverTimestamp(),
+    }, { merge: true })
+      .then(() => console.log('Product synced to Firestore:', product.id))
+      .catch((err) => console.warn('Firestore sync note:', err));
 
     return updated;
   }

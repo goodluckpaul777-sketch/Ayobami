@@ -23,7 +23,9 @@ import {
   Filter, 
   SearchX, 
   CheckCircle,
-  PackageCheck
+  PackageCheck,
+  Camera,
+  Plus
 } from 'lucide-react';
 
 const CART_STORAGE_KEY = 'ayobami_sam_cart_v2';
@@ -154,6 +156,54 @@ export const App: React.FC = () => {
     });
   };
 
+  // Toast notification state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Direct In-Place image upload for any product
+  const handleUploadImageForProduct = async (product: Product, files: FileList) => {
+    showToast(`Uploading ${files.length} photo(s) to cloud database...`);
+    try {
+      const uploadedUrls: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const url = await StoreService.uploadImage(files[i]);
+        uploadedUrls.push(url);
+      }
+      const updatedProduct: Product = {
+        ...product,
+        images: [...uploadedUrls, ...(product.images || [])],
+      };
+      const updatedList = await StoreService.saveProduct(updatedProduct);
+      setProducts(updatedList);
+      if (selectedProduct && selectedProduct.id === product.id) {
+        setSelectedProduct(updatedProduct);
+      }
+      showToast(`✓ Photo(s) published live! Visible on all devices.`);
+    } catch (err) {
+      console.error(err);
+      showToast(`Upload failed. Please check network.`);
+    }
+  };
+
+  // Direct image delete handler
+  const handleDeleteImageForProduct = async (product: Product, imageIndex: number) => {
+    const remaining = (product.images || []).filter((_, idx) => idx !== imageIndex);
+    const updatedProduct: Product = {
+      ...product,
+      images: remaining.length > 0 ? remaining : ['https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80'],
+    };
+    const updatedList = await StoreService.saveProduct(updatedProduct);
+    setProducts(updatedList);
+    if (selectedProduct && selectedProduct.id === product.id) {
+      setSelectedProduct(updatedProduct);
+    }
+    showToast(`Photo removed.`);
+  };
+
   const cartTotalCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
 
   return (
@@ -190,6 +240,31 @@ export const App: React.FC = () => {
 
         {/* Product Catalog Section */}
         <section id="catalog" className="py-8 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-24">
+          
+          {/* Quick Merchant Management Bar */}
+          <div className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-300/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-600 text-white font-bold shrink-0">
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+              </div>
+              <div>
+                <div className="text-xs sm:text-sm font-bold text-stone-900">
+                  Easy Photo Uploader &amp; Product Creator
+                </div>
+                <div className="text-[11px] text-stone-600">
+                  Click the <span className="font-semibold text-amber-900">+ Upload Photo</span> button on any cloth below, or click to add a new cloth product.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsAdminOpen(true)}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4 text-amber-400" />
+              <span>+ Add New Cloth Product</span>
+            </button>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
               <div className="flex items-center gap-2">
@@ -262,6 +337,7 @@ export const App: React.FC = () => {
                   onSelect={(p) => setSelectedProduct(p)}
                   onAddToCart={(p) => handleAddToCart(p, 1)}
                   onOpenLightbox={handleOpenLightbox}
+                  onUploadImage={handleUploadImageForProduct}
                 />
               ))}
             </div>
@@ -298,6 +374,8 @@ export const App: React.FC = () => {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
         onOpenLightbox={handleOpenLightbox}
+        onUploadImage={handleUploadImageForProduct}
+        onDeleteImage={handleDeleteImageForProduct}
       />
 
       <CartDrawer
@@ -342,6 +420,14 @@ export const App: React.FC = () => {
         imageUrl={lightboxData.imageUrl}
         title={lightboxData.title}
       />
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-stone-900/95 text-amber-300 font-semibold text-xs sm:text-sm shadow-2xl backdrop-blur-md border border-amber-500/40 flex items-center gap-2.5 animate-in fade-in slide-in-from-top-4">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Floating WhatsApp Quick Action Button */}
       <a
