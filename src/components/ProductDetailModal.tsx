@@ -135,26 +135,26 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
 
               {/* Direct In-Place Upload Sign / Camera Button on top */}
               {onUploadImage && (
-                <label 
-                  className="absolute top-3 left-3 z-20 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-lg cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+                <div 
+                  className="relative overflow-hidden z-20 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-lg cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
                   title="Upload or add more photos to this cloth"
                 >
                   {isUploading ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin text-amber-200" />
-                      <span>Uploading...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-200 pointer-events-none" />
+                      <span className="pointer-events-none">Uploading...</span>
                     </>
                   ) : (
                     <>
-                      <Camera className="w-4 h-4" />
-                      <span>+ Upload Photos</span>
+                      <Camera className="w-4 h-4 pointer-events-none" />
+                      <span className="pointer-events-none">+ Upload Photos</span>
                     </>
                   )}
                   <input 
                     type="file" 
                     multiple 
                     accept="image/*" 
-                    className="hidden" 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                     disabled={isUploading}
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
@@ -163,7 +163,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       }
                     }} 
                   />
-                </label>
+                </div>
               )}
 
               {/* Lightbox Trigger */}
@@ -206,20 +206,20 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-1">
               {/* Direct Add Photo Tile */}
               {onUploadImage && (
-                <label className="relative w-16 h-16 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50/80 hover:bg-amber-100 flex flex-col items-center justify-center text-amber-900 cursor-pointer shrink-0 transition-all hover:scale-105 active:scale-95 shadow-xs">
+                <div className="relative overflow-hidden w-16 h-16 rounded-xl border-2 border-dashed border-amber-500 bg-amber-50/80 hover:bg-amber-100 flex flex-col items-center justify-center text-amber-900 cursor-pointer shrink-0 transition-all hover:scale-105 active:scale-95 shadow-xs">
                   {isUploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-amber-600" />
+                    <Loader2 className="w-5 h-5 animate-spin text-amber-600 pointer-events-none" />
                   ) : (
                     <>
-                      <Plus className="w-5 h-5 text-amber-700" />
-                      <span className="text-[10px] font-bold mt-0.5">Add Photo</span>
+                      <Plus className="w-5 h-5 text-amber-700 pointer-events-none" />
+                      <span className="text-[10px] font-bold mt-0.5 pointer-events-none">Add Photo</span>
                     </>
                   )}
                   <input 
                     type="file" 
                     multiple 
                     accept="image/*" 
-                    className="hidden" 
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                     disabled={isUploading}
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
@@ -228,7 +228,7 @@ export const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       }
                     }} 
                   />
-                </label>
+                </div>
               )}
 
               {images.map((img, idx) => (

@@ -344,18 +344,18 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 </div>
 
                 {/* Big Drag / Click Uploader */}
-                <label className="border-2 border-dashed border-amber-400 hover:border-amber-600 bg-white hover:bg-amber-100/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-xs group">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-800 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <div className="relative overflow-hidden border-2 border-dashed border-amber-400 hover:border-amber-600 bg-white hover:bg-amber-100/40 rounded-2xl p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all shadow-xs group">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-800 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform pointer-events-none">
                     {isProcessingPhotos ? (
                       <Loader2 className="w-6 h-6 animate-spin text-amber-700" />
                     ) : (
                       <Upload className="w-6 h-6 text-amber-700" />
                     )}
                   </div>
-                  <span className="font-bold text-xs sm:text-sm text-stone-900">
+                  <span className="font-bold text-xs sm:text-sm text-stone-900 pointer-events-none">
                     {isProcessingPhotos ? 'Processing Photos...' : 'Tap to Upload Cloth Photos (Camera / Phone Gallery)'}
                   </span>
-                  <span className="text-[11px] text-stone-500 mt-1">
+                  <span className="text-[11px] text-stone-500 mt-1 pointer-events-none">
                     Select one or multiple photos from your device. They will be saved to your live store.
                   </span>
                   <input
@@ -364,9 +364,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                     accept="image/*"
                     onChange={handlePhotoSelect}
                     disabled={isProcessingPhotos}
-                    className="hidden"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                    title="Tap to select photos"
                   />
-                </label>
+                </div>
 
                 {/* Thumbnail Previews */}
                 {formImages.length > 0 && (
@@ -588,20 +589,20 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                       {/* Action buttons on product row */}
                       <div className="flex items-center gap-2 self-end sm:self-center">
                         {/* Quick Add Photo */}
-                        <label 
-                          className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+                        <div 
+                          className="relative overflow-hidden px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 text-xs font-semibold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
                           title="Attach more photos to this cloth"
                         >
-                          <Camera className="w-3.5 h-3.5 text-amber-700" />
-                          <span>+ Photo</span>
+                          <Camera className="w-3.5 h-3.5 text-amber-700 pointer-events-none" />
+                          <span className="pointer-events-none">+ Photo</span>
                           <input
                             type="file"
                             multiple
                             accept="image/*"
-                            className="hidden"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                             onChange={(e) => handleQuickAddPhotoToListed(prod, e.target.files)}
                           />
-                        </label>
+                        </div>
 
                         {/* Edit Details */}
                         <button

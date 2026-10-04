@@ -97,31 +97,31 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         {/* Direct In-Place Upload Sign / Button */}
         {onUploadImage && (
-          <label
+          <div
             onClick={(e) => e.stopPropagation()}
-            className="absolute bottom-2.5 left-2.5 z-20 px-2.5 py-1.5 rounded-xl bg-stone-900/85 hover:bg-amber-600 text-white text-[11px] font-semibold backdrop-blur-xs shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
+            className="absolute bottom-2.5 left-2.5 z-20 overflow-hidden px-2.5 py-1.5 rounded-xl bg-stone-900/85 hover:bg-amber-600 text-white text-[11px] font-semibold backdrop-blur-xs shadow-md cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
             title="Upload photo directly to this product"
           >
             {isUploading ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300" />
-                <span>Uploading...</span>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-300 pointer-events-none" />
+                <span className="pointer-events-none">Uploading...</span>
               </>
             ) : (
               <>
-                <Camera className="w-3.5 h-3.5 text-amber-300" />
-                <span>+ Upload Photo</span>
+                <Camera className="w-3.5 h-3.5 text-amber-300 pointer-events-none" />
+                <span className="pointer-events-none">+ Upload Photo</span>
               </>
             )}
             <input
               type="file"
               multiple
               accept="image/*"
-              className="hidden"
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
               onChange={handleFileChange}
               disabled={isUploading}
             />
-          </label>
+          </div>
         )}
 
         {/* Multiple Images Counter */}
