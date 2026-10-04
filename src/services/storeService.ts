@@ -15,8 +15,8 @@ import { Product, OrderDetails } from '../types';
 import { INITIAL_PRODUCTS } from '../data/initialData';
 import { compressImageFile } from '../utils/imageCompressor';
 
-const LOCAL_STORAGE_KEY = 'ayobami_sam_products_v2';
-const LAST_SERVER_SYNC_KEY = 'ayobami_sam_last_sync_v2';
+const LOCAL_STORAGE_KEY = 'ayobami_sam_products_v3';
+const LAST_SERVER_SYNC_KEY = 'ayobami_sam_last_sync_v3';
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders';
 

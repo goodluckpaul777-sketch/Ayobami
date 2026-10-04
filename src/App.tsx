@@ -68,11 +68,19 @@ export const App: React.FC = () => {
     }
   }, [cartItems]);
 
-  // Initial load from Firestore
+  // Initial load from Firestore (stable reconciliation to prevent image flicker)
   useEffect(() => {
     StoreService.fetchFirestoreProducts().then((res) => {
       if (res.products && res.products.length > 0) {
-        setProducts(res.products);
+        setProducts((prev) => {
+          if (
+            prev.length === res.products.length &&
+            prev.every((p, i) => p.id === res.products[i]?.id && p.images?.[0] === res.products[i]?.images?.[0])
+          ) {
+            return prev;
+          }
+          return res.products;
+        });
       }
     });
   }, []);

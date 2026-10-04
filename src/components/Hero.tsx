@@ -98,7 +98,7 @@ export const Hero: React.FC<HeroProps> = ({ onSelectCategory, onOpenEstimator })
             <div className="relative rounded-2xl overflow-hidden border border-amber-500/20 bg-stone-800/60 p-4 shadow-2xl backdrop-blur-xs">
               <div className="relative h-64 sm:h-80 rounded-xl overflow-hidden group">
                 <img
-                  src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1000&q=80"
+                  src="/images/products/prod-ankara-01-0.jpg"
                   alt="Ayobami SAM Venture Fabrics"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />

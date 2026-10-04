@@ -32,7 +32,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const primaryImage = product.images && product.images.length > 0
     ? product.images[0]
-    : 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80';
+    : '/images/products/prod-ankara-01-0.jpg';
 
   const discountPercent = product.originalPrice && product.originalPrice > product.price
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)

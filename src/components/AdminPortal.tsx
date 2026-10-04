@@ -556,7 +556,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
 
               <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden bg-white">
                 {products.map((prod) => {
-                  const primaryImg = prod.images?.[0] || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=200&q=80';
+                  const primaryImg = prod.images?.[0] || '/images/products/prod-ankara-01-0.jpg';
                   return (
                     <div key={prod.id} className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50/70 transition-colors">
                       <div className="flex items-center gap-3">
