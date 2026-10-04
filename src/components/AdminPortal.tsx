@@ -12,7 +12,8 @@ import {
   ExternalLink,
   Layers,
   CheckCircle2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  RefreshCw
 } from 'lucide-react';
 import { Product, CategoryId } from '../types';
 import { formatNaira, generateId } from '../utils/formatters';
@@ -49,7 +50,30 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   // Status & Loading
   const [isProcessingPhotos, setIsProcessingPhotos] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [showApiConfig, setShowApiConfig] = useState(false);
+
+  const handleManualSync = async () => {
+    setIsRefreshing(true);
+    setFeedbackMessage(null);
+    try {
+      const res = await StoreService.fetchFirestoreProducts(true);
+      if (res.products && res.products.length > 0) {
+        onProductsUpdated(res.products);
+        setFeedbackMessage({
+          text: res.fromCache 
+            ? `Loaded ${res.products.length} products from persistent local disk cache.`
+            : `✓ Successfully synced ${res.products.length} products live from Firestore Cloud.`,
+          type: 'success',
+        });
+      }
+    } catch {
+      setFeedbackMessage({ text: 'Cloud is busy or quota limit reached. Serving from persistent cache.', type: 'error' });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const resetForm = () => {
     setEditingProductId(null);
@@ -506,16 +530,28 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
                 <span className="text-xs text-stone-500 font-medium">
                   Showing all products in your store catalog.
                 </span>
-                <button
-                  onClick={() => {
-                    resetForm();
-                    setActiveTab('add');
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-amber-700 shadow-xs"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Product</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleManualSync}
+                    disabled={isRefreshing}
+                    className="px-2.5 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700 text-xs font-semibold flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all disabled:opacity-60"
+                    title="Check for live updates from Firebase Cloud"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-stone-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span>{isRefreshing ? 'Syncing...' : 'Sync Cloud'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      resetForm();
+                      setActiveTab('add');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-amber-600 text-white text-xs font-bold flex items-center gap-1 hover:bg-amber-700 shadow-xs"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Product</span>
+                  </button>
+                </div>
               </div>
 
               <div className="divide-y divide-stone-100 border border-stone-200 rounded-2xl overflow-hidden bg-white">
@@ -593,12 +629,33 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         </div>
 
         {/* Bottom Cloud Footer */}
-        <div className="p-3 bg-stone-100 border-t border-stone-200 text-stone-600 text-[11px] flex items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Database: <strong>{firebaseConfig.firestoreDatabaseId || 'adebisi-store-live'}</strong></span>
+        <div className="p-3 bg-stone-100 border-t border-stone-200 text-stone-600 text-[11px] px-4 sm:px-6 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>Cloud DB: <strong>{firebaseConfig.firestoreDatabaseId || 'adebisi-store-live'}</strong></span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowApiConfig(!showApiConfig)}
+              className="text-amber-800 hover:text-amber-950 font-semibold underline"
+            >
+              {showApiConfig ? 'Hide Cloud Config' : 'View API Key & Config'}
+            </button>
           </div>
-          <span className="text-stone-400 hidden sm:inline">All changes sync automatically across all devices</span>
+
+          {showApiConfig && (
+            <div className="p-3 rounded-xl bg-stone-900 text-stone-200 font-mono text-[10px] space-y-1 animate-in fade-in">
+              <div className="text-amber-400 font-bold mb-1">Live Firebase Binding Credentials:</div>
+              <div><strong>Project ID:</strong> {firebaseConfig.projectId}</div>
+              <div><strong>Firestore DB:</strong> {firebaseConfig.firestoreDatabaseId}</div>
+              <div><strong>API Key:</strong> {firebaseConfig.apiKey}</div>
+              <div><strong>App ID:</strong> {firebaseConfig.appId}</div>
+              <div className="text-stone-400 text-[9px] pt-1">
+                Config file location: <span className="text-amber-300">/firebase-applet-config.json</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

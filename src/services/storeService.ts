@@ -2,21 +2,30 @@ import {
   collection, 
   doc, 
   getDocs, 
+  getDocsFromCache,
+  getDocsFromServer,
+  query,
+  limit,
   setDoc, 
   deleteDoc, 
   serverTimestamp 
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase';
+import { db } from '../firebase';
 import { Product, OrderDetails } from '../types';
 import { INITIAL_PRODUCTS } from '../data/initialData';
 import { compressImageFile } from '../utils/imageCompressor';
 
 const LOCAL_STORAGE_KEY = 'ayobami_sam_products_v2';
+const LAST_SERVER_SYNC_KEY = 'ayobami_sam_last_sync_v2';
 const PRODUCTS_COLLECTION = 'products';
 const ORDERS_COLLECTION = 'orders';
 
+// Cache TTL: 20 minutes before checking server again (saves thousands of reads)
+const CACHE_TTL_MS = 20 * 60 * 1000;
+
 export class StoreService {
+  private static inFlightFetch: Promise<{ products: Product[]; fromFirestore: boolean; fromCache: boolean }> | null = null;
+
   /**
    * Upload / process an image file.
    * Compresses the image in <50ms so it never hangs or fails on mobile/desktop,
@@ -25,6 +34,7 @@ export class StoreService {
   static async uploadImage(file: File): Promise<string> {
     return await compressImageFile(file, 750, 750, 0.72);
   }
+
   /**
    * Get products from localStorage first for instant UI response,
    * with fallback to INITIAL_PRODUCTS.
@@ -61,30 +71,117 @@ export class StoreService {
   }
 
   /**
-   * Fetch live products from Firestore (adebisi-store-live).
-   * If Firestore has data, updates localStorage and returns them.
+   * Check if our cached data is considered fresh.
    */
-  static async fetchFirestoreProducts(): Promise<{ products: Product[]; fromFirestore: boolean }> {
+  static isCacheFresh(): boolean {
     try {
-      const snap = await getDocs(collection(db, PRODUCTS_COLLECTION));
-      if (!snap.empty) {
-        const firestoreProducts: Product[] = [];
-        snap.forEach((docSnap) => {
+      const lastSyncStr = localStorage.getItem(LAST_SERVER_SYNC_KEY);
+      if (!lastSyncStr) return false;
+      const lastSync = Number(lastSyncStr);
+      return Date.now() - lastSync < CACHE_TTL_MS;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Record a successful sync timestamp.
+   */
+  static markCacheSynced(): void {
+    try {
+      localStorage.setItem(LAST_SERVER_SYNC_KEY, String(Date.now()));
+    } catch {
+      // Ignore storage write issues
+    }
+  }
+
+  /**
+   * Optimized catalog fetcher:
+   * 1. In-flight Deduplication: If already fetching, reuse the ongoing promise.
+   * 2. Persistent Cache First: Reads from IndexedDB cache via getDocsFromCache (0 cloud reads).
+   * 3. TTL Throttling: If cache is fresh (<20 min) and non-empty, skips server completely.
+   * 4. Bounded Queries: When contacting server, uses query(..., limit(60)).
+   * 5. Graceful Fallback: On Quota exceeded or offline, seamlessly serves cached products.
+   */
+  static async fetchFirestoreProducts(
+    forceServerRefresh = false
+  ): Promise<{ products: Product[]; fromFirestore: boolean; fromCache: boolean }> {
+    // If a request is already in-flight, reuse it to avoid duplicate parallel reads
+    if (this.inFlightFetch) {
+      return this.inFlightFetch;
+    }
+
+    this.inFlightFetch = this._executeFetch(forceServerRefresh);
+    try {
+      const result = await this.inFlightFetch;
+      return result;
+    } finally {
+      this.inFlightFetch = null;
+    }
+  }
+
+  private static async _executeFetch(
+    forceServerRefresh: boolean
+  ): Promise<{ products: Product[]; fromFirestore: boolean; fromCache: boolean }> {
+    const productsRef = collection(db, PRODUCTS_COLLECTION);
+    const localProducts = this.getLocalProducts();
+
+    // 1. Try reading from Firestore's persistent local cache (IndexedDB)
+    try {
+      const cacheSnap = await getDocsFromCache(productsRef);
+      if (!cacheSnap.empty) {
+        const cachedProducts: Product[] = [];
+        cacheSnap.forEach((docSnap) => {
           const data = docSnap.data() as Product;
-          firestoreProducts.push({
+          cachedProducts.push({
             ...data,
             id: docSnap.id || data.id,
           });
         });
-        if (firestoreProducts.length > 0) {
-          this.saveLocalProducts(firestoreProducts);
-          return { products: firestoreProducts, fromFirestore: true };
+
+        if (cachedProducts.length > 0) {
+          this.saveLocalProducts(cachedProducts);
+          // If cache is fresh and we didn't explicitly force a refresh, return immediately (0 cloud reads!)
+          if (!forceServerRefresh && this.isCacheFresh()) {
+            return { products: cachedProducts, fromFirestore: true, fromCache: true };
+          }
+        }
+      }
+    } catch {
+      // Cache empty or still initializing, proceed
+    }
+
+    // If cache is fresh and not forcing refresh, localProducts is sufficient (0 cloud reads!)
+    if (!forceServerRefresh && this.isCacheFresh() && localProducts.length > 0) {
+      return { products: localProducts, fromFirestore: true, fromCache: true };
+    }
+
+    // 2. Fetch from server with bounded query (limit 60)
+    try {
+      const boundedQuery = query(productsRef, limit(60));
+      const serverSnap = await getDocsFromServer(boundedQuery);
+      if (!serverSnap.empty) {
+        const serverProducts: Product[] = [];
+        serverSnap.forEach((docSnap) => {
+          const data = docSnap.data() as Product;
+          serverProducts.push({
+            ...data,
+            id: docSnap.id || data.id,
+          });
+        });
+
+        if (serverProducts.length > 0) {
+          this.saveLocalProducts(serverProducts);
+          this.markCacheSynced();
+          return { products: serverProducts, fromFirestore: true, fromCache: false };
         }
       }
     } catch (err) {
-      console.warn('Firestore fetch failed (using local catalog):', err);
+      console.warn('Firestore server notice (quota or offline, serving from local cache):', err);
     }
-    return { products: this.getLocalProducts(), fromFirestore: false };
+
+    // 3. Graceful offline/quota fallback to local cache
+    return { products: localProducts, fromFirestore: false, fromCache: true };
   }
 
   /**
@@ -103,6 +200,7 @@ export class StoreService {
       updated = [product, ...current];
     }
     this.saveLocalProducts(updated);
+    this.markCacheSynced();
 
     // Non-blocking background sync to Firestore (adebisi-store-live)
     setDoc(doc(db, PRODUCTS_COLLECTION, product.id), {
@@ -122,6 +220,7 @@ export class StoreService {
     const current = this.getLocalProducts();
     const updated = current.filter(p => p.id !== productId);
     this.saveLocalProducts(updated);
+    this.markCacheSynced();
 
     try {
       await deleteDoc(doc(db, PRODUCTS_COLLECTION, productId));
@@ -133,29 +232,11 @@ export class StoreService {
   }
 
   /**
-   * Sync all local products to Firestore.
-   */
-  static async syncAllToFirestore(products: Product[]): Promise<{ count: number; success: boolean }> {
-    let successCount = 0;
-    for (const prod of products) {
-      try {
-        await setDoc(doc(db, PRODUCTS_COLLECTION, prod.id), {
-          ...prod,
-          syncedAt: serverTimestamp(),
-        }, { merge: true });
-        successCount++;
-      } catch (e) {
-        console.warn(`Failed to sync product ${prod.id} to Firestore:`, e);
-      }
-    }
-    return { count: successCount, success: successCount > 0 };
-  }
-
-  /**
    * Reset local catalog back to standard INITIAL_PRODUCTS.
    */
   static resetToDefault(): Product[] {
     this.saveLocalProducts(INITIAL_PRODUCTS);
+    this.markCacheSynced();
     return INITIAL_PRODUCTS;
   }
 
