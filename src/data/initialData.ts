@@ -1,437 +1,402 @@
-import { Category, FabricProduct, StoreSettings, SectionCategoryInfo, TailoringYardGuide, CustomerTestimonial } from '../types';
+import { Product, CustomerReview, CategoryInfo } from '../types';
 
-export const INITIAL_CATEGORIES: Category[] = [
-  { id: 'cat-machines-irons', name: 'Tailoring Irons & Equipment', slug: 'tailoring-irons', mainSection: 'tailoring-machine', description: 'Heavy-duty tailor pressing irons and tools', itemCount: 1 },
-  { id: 'cat-machines-industrial', name: 'Industrial Sewing Machines', slug: 'industrial-machines', mainSection: 'tailoring-machine', description: 'Direct drive industrial tailoring machines', itemCount: 2 },
-  { id: 'cat-cloths-ankara', name: 'Ankara Prints', slug: 'ankara', mainSection: 'cloths', description: 'Original vibrant African wax prints', itemCount: 1 },
-  { id: 'cat-cloths-lace', name: 'Swiss Voile Lace', slug: 'lace', mainSection: 'cloths', description: 'Luxury party and owambe lace fabrics', itemCount: 1 },
-  { id: 'cat-cloths-senator', name: 'Senator Suiting', slug: 'senator', mainSection: 'cloths', description: 'Super 150s wool cashmere suitings', itemCount: 1 },
-  { id: 'cat-shoes-loafers', name: 'Men Loafers', slug: 'loafers', mainSection: 'shoes', description: 'Handcrafted genuine leather loafers', itemCount: 1 },
-  { id: 'cat-shoes-matching-sets', name: 'Matching Shoe & Bag Sets', slug: 'matching-sets', mainSection: 'shoes', description: 'Coordinated 2-in-1 party sets', itemCount: 1 },
-];
-
-export const INITIAL_PRODUCTS: FabricProduct[] = [
-  // --- TAILORING MACHINES & EQUIPMENT (PEACOCK IRON & WORKSHOP GEAR) ---
-  {
-    id: 'prod-peacock-iron',
-    name: 'Peacock Iron',
-    mainSection: 'tailoring-machine',
-    category: 'Tailoring Irons & Equipment',
-    categorySlug: 'tailoring-irons',
-    description: 'Original heavy-duty Peacock tailoring pressing iron. Features solid cast metal construction, superior heat retention, ergonomic heat-resistant wooden handle, and smooth heavy pressing base. Perfect for creating razor-sharp creases on Senator native suits, Agbada folds, Ankara dresses, and heavy tailoring fabrics.',
-    availableStock: 30,
-    minimumOrder: 1,
-    unitLabel: 'piece',
-    image: '/peacock-iron.jpeg',
-    galleryImages: ['/peacock-iron.jpeg'],
-    colors: ['Original Silver Cast Metal'],
-    fabricType: 'Heavy-Duty Solid Cast Metal Pressing Iron',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 5.0,
-    reviewCount: 48,
-    suitableFor: [
-      'Senator Native Suit Creasing',
-      'Agbada & Buba Pressing',
-      'Lace & Ankara Starch Finishing',
-      'Professional Tailoring Workshops',
-      'Commercial Dry Cleaning & Pressing'
-    ],
-    textureNote: 'Solid heavy-gauge iron base with superior heat conductivity for razor-sharp tailoring creases.',
-    origin: 'Original Peacock Brand',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Bulk carton wholesale pricing available for tailoring institutes and merchants nationwide.',
-    badge: 'Tailor Choice'
+export const STORE_INFO = {
+  name: 'Ayobami SAM Venture',
+  tagline: 'Fabrics, Sewing Machines & Fashion Accessories',
+  subtitle: 'Direct Balogun Market Lagos Merchant • Wholesale & Retail',
+  address: 'Shop 14, Balogun Central Plaza, Balogun Market, Lagos Island, Lagos State, Nigeria',
+  landmark: 'Adjacent Oluwole Complex, Lagos Island',
+  phone: '+234 814 624 3747',
+  whatsapp: '+2348146243747',
+  email: 'goodluckolatomide406@gmail.com',
+  businessHours: 'Mon - Sat: 8:00 AM – 6:00 PM (West Africa Time)',
+  accountDetails: {
+    bankName: 'Moniepoint / OPay / Commercial Merchant Bank',
+    accountName: 'Ayobami SAM Venture',
+    accountNumber: '0814624374',
+    accountType: 'Verified Business Account',
   },
-  {
-    id: 'prod-industrial-direct-drive',
-    name: 'Industrial Direct-Drive Lockstitch Sewing Machine',
-    mainSection: 'tailoring-machine',
-    category: 'Industrial Sewing Machines',
-    categorySlug: 'industrial-machines',
-    description: 'High-speed commercial lockstitch tailoring machine with energy-saving direct-drive servo motor, automatic needle positioning, built-in LED needle illumination, and whisper-quiet operation. Built for continuous production on senator materials, denim, lace, and heavy textiles.',
-    availableStock: 12,
-    minimumOrder: 1,
-    unitLabel: 'machine',
-    image: 'https://images.unsplash.com/photo-1605289982774-9a6fef564df8?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1605289982774-9a6fef564df8?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Industrial White / Blue'],
-    fabricType: 'Heavy Duty Commercial Grade Direct-Drive System',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 4.9,
-    reviewCount: 35,
-    suitableFor: [
-      'Commercial Tailoring Workshops',
-      'Senator Suits & Trouser Making',
-      'Heavy Fabric Seaming',
-      'High-Speed Garment Production'
-    ],
-    textureNote: 'Direct-drive servo motor with adjustable digital speed controls up to 5,000 RPM.',
-    origin: 'Commercial Import',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Complete with stand, table, and accessories pack. Direct workshop delivery.',
-    badge: 'Workshop Standard'
-  },
-  {
-    id: 'prod-overlock-weaving',
-    name: 'Heavy-Duty 4-Thread Overlock Weaving Machine',
-    mainSection: 'tailoring-machine',
-    category: 'Industrial Sewing Machines',
-    categorySlug: 'industrial-machines',
-    description: 'Professional high-speed 4-thread overlock interlock weaving machine. Delivers clean, fray-proof edge finishing for native attires, knitwear, silks, and tailored trousers. Includes built-in trim knife and smooth differential feed.',
-    availableStock: 8,
-    minimumOrder: 1,
-    unitLabel: 'machine',
-    image: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Industrial White'],
-    fabricType: 'High-Speed 4-Thread Differential Feed Overlocker',
-    isNewArrival: false,
-    isFeatured: false,
-    inStock: true,
-    rating: 4.8,
-    reviewCount: 22,
-    suitableFor: [
-      'Fray Prevention & Edge Weaving',
-      'Lace Finishing & Seam Neatening',
-      'Native Agbada Sleeve Edging',
-      'Boutique Quality Garments'
-    ],
-    origin: 'Commercial Import',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Discount available when paired with direct-drive machine bundle.',
-    badge: 'Overlock Pro'
-  },
-
-  // --- CLOTHS & FABRICS (AUTHENTIC NIGERIAN & IMPORTED TEXTILES) ---
-  {
-    id: 'prod-ankara-supreme',
-    name: 'Supreme Dutch Wax Ankara (6 Yards)',
-    mainSection: 'cloths',
-    category: 'Ankara Prints',
-    categorySlug: 'ankara',
-    description: '100% premium grade cotton authentic African wax print with vivid bilateral color saturation, non-fading dyes, and smooth soft-touch finish. Perfect for regal Owambe styles, couples matching native sets, and modern African luxury fashion.',
-    availableStock: 65,
-    minimumOrder: 1,
-    unitLabel: 'piece (6 yards)',
-    image: 'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1598033129183-c4f50c736f10?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Royal Gold & Emerald', 'Navy & Coral Red', 'Wine & Mustard'],
-    fabricType: '100% Combed Cotton Real Dutch Wax',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 4.9,
-    reviewCount: 54,
-    suitableFor: [
-      'Aso-Ebi Wedding Uniforms',
-      'Kaftans & Modern Buba Fashions',
-      'Matching Couples Outfits',
-      'Formal & Festive Events'
-    ],
-    textureNote: 'Double-sided crisp wax print that softens beautifully after first wash.',
-    origin: 'Authentic Holland Real Wax',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Aso-Ebi bundle discounts available for 10+ pieces. Custom packaging on demand.',
-    badge: 'Best Seller'
-  },
-  {
-    id: 'prod-swiss-voile-lace',
-    name: 'Luxury Swiss Voile Lace (5 Yards)',
-    mainSection: 'cloths',
-    category: 'Swiss Voile Lace',
-    categorySlug: 'lace',
-    description: 'Intricately embroidered pure Swiss voile lace with shimmering metallic accents and scallop borders. Renowned for its breathable cotton base, royal texture, and exquisite drape for chieftaincy titles, high-profile weddings, and anniversary ceremonies.',
-    availableStock: 40,
-    minimumOrder: 1,
-    unitLabel: 'piece (5 yards)',
-    image: 'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1607344645866-009c320c5ab8?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Champagne Gold', 'Ice White', 'Royal Lilac', 'Powder Blue'],
-    fabricType: 'Pure Swiss Voile Cotton Base with Fine Threadwork',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 5.0,
-    reviewCount: 41,
-    suitableFor: [
-      'Bride & Mother of the Day Attire',
-      'Royal Chieftaincy Iro & Buba',
-      'Owambe VIP Fashion',
-      'Milestone Celebrations'
-    ],
-    origin: 'Direct St. Gallen Switzerland',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Full bundle cuts available with matching headties on request.',
-    badge: 'Luxury Voile'
-  },
-  {
-    id: 'prod-cashmere-senator',
-    name: 'Super 150s Wool Cashmere Senator Material (4 Yards)',
-    mainSection: 'cloths',
-    category: 'Senator Suiting',
-    categorySlug: 'senator',
-    description: 'Supreme Super 150s wool-blended cashmere suiting material with a lustrous matte sheen and non-creasing drape. The standard choice for discerning Nigerian gentlemen seeking commanding Senator outfits, corporate native suits, and sharp Safari styles.',
-    availableStock: 50,
-    minimumOrder: 1,
-    unitLabel: 'piece (4 yards)',
-    image: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Midnight Charcoal', 'Navy Blue', 'Forest Green', 'Burgundy Wine'],
-    fabricType: 'Super 150s Wool Cashmere Blend',
-    isNewArrival: false,
-    isFeatured: true,
-    inStock: true,
-    rating: 4.9,
-    reviewCount: 62,
-    suitableFor: [
-      'Bespoke Senator Native Suits',
-      'Executive Safari Suits',
-      'Corporate Native Fridays',
-      'Traditional Groomsmen Ensembles'
-    ],
-    origin: 'Imported Suiting Mill',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Full rolls available for uniform corporate tailoring orders.',
-    badge: 'Gentleman Standard'
-  },
-
-  // --- SHOES, BAGS & MATCHING SETS ---
-  {
-    id: 'prod-italian-loafers',
-    name: 'Handcrafted Italian Native Leather Loafers',
-    mainSection: 'shoes',
-    category: 'Men Loafers',
-    categorySlug: 'loafers',
-    description: 'Bespoke hand-burnished genuine Italian calfskin loafers with cushioned ergonomic memory-foam insole and durable leather outer sole. Custom designed to complement Senator outfits, Agbada trousers, and smart-casual natives.',
-    availableStock: 28,
-    minimumOrder: 1,
-    unitLabel: 'pair',
-    image: 'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Cognac Tan', 'Classic Black', 'Espresso Brown'],
-    fabricType: 'Full Grain Genuine Italian Leather',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 5.0,
-    reviewCount: 39,
-    suitableFor: [
-      'Senator Native Suits & Trousers',
-      'Agbada Occasions',
-      'Wedding Grooms & Guests',
-      'Executive Business Casual'
-    ],
-    origin: 'Italian Leather Craftsmanship',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Size ranges 40 to 46 available. Custom shoe boxes provided.',
-    badge: 'Handmade Luxury'
-  },
-  {
-    id: 'prod-matching-set-emerald',
-    name: 'Luxury 2-in-1 Matching Shoe & Clutch Bag Set',
-    mainSection: 'shoes',
-    category: 'Matching Shoe & Bag Sets',
-    categorySlug: 'matching-sets',
-    description: 'Coordinated Italian-inspired occasion heels with matching structured jewel-clasp clutch bag. Engineered with comfortable block heels, shimmering crystal trim, and detachable shoulder chain for effortless Owambe elegance.',
-    availableStock: 20,
-    minimumOrder: 1,
-    unitLabel: 'set (shoes + bag)',
-    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80',
-    galleryImages: [
-      'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80'
-    ],
-    colors: ['Champagne Gold', 'Royal Emerald Green', 'Silver Shimmer'],
-    fabricType: 'Coordinated Shimmer Textile with Metallic Leather Accents',
-    isNewArrival: true,
-    isFeatured: true,
-    inStock: true,
-    rating: 4.9,
-    reviewCount: 29,
-    isMatchingSet: true,
-    suitableFor: [
-      'Owambe Weddings & Receptions',
-      'Aso-Ebi Guest Attire',
-      'Church Milestones & Anniversaries',
-      'Evening Banquets'
-    ],
-    origin: 'Imported Luxury Footwear',
-    isWholesaleAvailable: true,
-    wholesaleNote: 'Complete boxed sets. Wholesale carton assortments available.',
-    badge: '2-in-1 Set'
+  deliveryInfo: {
+    lagosSameDay: 'Same-day or next-day bike & dispatch delivery across Lagos Island, Ikeja, Surulere, Lekki, etc.',
+    interstate: 'Nationwide interstate bus waybill (God Is Good, Peace Mass, Young Shall Grow, ABC Transport) within 24–48 hours.',
+    international: 'DHL / FedEx international express shipping for diaspora orders (UK, USA, Canada, Europe).',
   }
-];
-
-export const STORE_SETTINGS: StoreSettings = {
-  storeName: 'Ayobami SAM Ventures',
-  tagline: 'Premium Fabrics, Bespoke Shoes & Bags, and Tailoring Equipment',
-  address: '37/39 Balogun West, Molake House, Lagos Island, Nigeria',
-  marketLocation: '37/39 Balogun West, Molake House, Lagos Island',
-  city: 'Lagos Island',
-  state: 'Lagos State',
-  country: 'Nigeria',
-  phone: '08033810865',
-  phoneNumbers: ['08033810865', '+234 803 381 0865'],
-  secondaryPhone: '+234 803 381 0865',
-  whatsapp: '2348033810865',
-  email: '',
-  announcement: '✨ Welcome to Ayobami SAM Ventures! Direct Wholesale & Retail for Fabrics, Shoes, Matching Bags & Tailoring Machines. Click any product to order directly on WhatsApp!',
-  themeColor: '#0F2E22',
-  logoUrl: '/hero-logo.png',
-  aboutText: 'Ayobami SAM Ventures (ASV) is your trusted Nigerian merchant for authentic Swiss Voile Laces, Dutch Wax Ankara, Cashmere Senator suitings, Atiku Brocades, handcrafted Italian native shoes, coordinated 2-in-1 matching shoe and bag sets, and industrial sewing equipment. Serving retail fashion enthusiasts and wholesale merchants nationwide.',
-  businessType: 'Wholesale & Retail Merchant',
-  customerReach: 'Nationwide & International Diaspora Delivery',
-  openingHours: 'Open 24/7 (Always Open for Orders & Inquiries)',
-  bankDetails: {
-    bankName: '',
-    accountNumber: '',
-    accountName: ''
-  },
-  stateDeliveryRates: {
-    'Lagos State': { name: 'Lagos State', rate: 2500, deliveryDays: '24 - 48 Hours' },
-    'Oyo State (Ibadan)': { name: 'Oyo State (Ibadan)', rate: 1500, deliveryDays: 'Same Day / 24 Hours' },
-    'Ogun State': { name: 'Ogun State', rate: 3000, deliveryDays: '24 - 48 Hours' },
-    'Osun State': { name: 'Osun State', rate: 3000, deliveryDays: '24 - 48 Hours' },
-    'Ondo State': { name: 'Ondo State', rate: 3500, deliveryDays: '2 - 3 Days' },
-    'Ekiti State': { name: 'Ekiti State', rate: 3500, deliveryDays: '2 - 3 Days' },
-    'FCT Abuja': { name: 'FCT Abuja', rate: 4500, deliveryDays: '2 - 3 Days' },
-    'Rivers State (Port Harcourt)': { name: 'Rivers State (Port Harcourt)', rate: 5000, deliveryDays: '2 - 4 Days' },
-    'Kano / Kaduna State': { name: 'Kano / Kaduna State', rate: 5500, deliveryDays: '3 - 5 Days' },
-    'Other States / Nationwide Interstate': { name: 'Other States / Nationwide Interstate', rate: 4500, deliveryDays: '2 - 4 Days via Interstate Park / Courier' }
-  },
-  freeDeliveryThreshold: 100000,
-  enableWhatsAppDirect: true
 };
 
-export const INITIAL_STORE_SETTINGS = STORE_SETTINGS;
-
-export const OFFICIAL_LOGO_URL = '/hero-logo.png';
-
-export const CATEGORIES = INITIAL_CATEGORIES;
-
-export const MAIN_SECTIONS: SectionCategoryInfo[] = [
+export const CATEGORIES: CategoryInfo[] = [
   {
-    id: 'cloths',
-    name: 'Fabrics & Textiles',
-    slug: 'cloths',
-    subtitle: 'Laces, Ankara & Senator Suitings',
-    description: 'Authentic Swiss Voile Laces, Dutch Wax Ankara, Guinea Brocade, and Super 150s Cashmere Senator materials.',
-    image: '/shop-location.jpg',
-    subcategories: ['Ankara Prints', 'Swiss Voile Lace', 'Senator Cashmere', 'Atiku Brocade'],
-    features: ['100% Pure Cotton', 'Original Dutch Wax', 'Direct Wholesale Cuts', 'Aso-Ebi Uniform Bundles']
+    id: 'all',
+    name: 'All Collections',
+    description: 'Explore our complete wholesale & retail collection',
+    iconName: 'Sparkles',
   },
   {
-    id: 'shoes',
-    name: 'Shoes, Bags & Sets',
-    slug: 'shoes',
-    subtitle: 'Handcrafted Italian Shoes & Matching Sets',
-    description: 'Bespoke Italian native loafers, formal monk straps, and luxury coordinated 2-in-1 matching shoe & clutch bag sets.',
-    image: '/logo.png',
-    subcategories: ['Men Native Loafers', '2-in-1 Matching Sets', 'Luxury Handbags', 'Monk Strap Shoes'],
-    features: ['Genuine Italian Leather', 'Coordinated Color Sets', 'Comfort Cushion Soles', 'Bespoke Sizing']
+    id: 'ankara',
+    name: 'Ankara Prints',
+    description: 'Hollandais, High Target, English Wax, Hitarget & Aso-Ebi Uniforms',
+    iconName: 'Palette',
+    badge: 'Hot Seller',
   },
   {
-    id: 'tailoring-machine',
-    name: 'Tailoring Machines & Equipment',
-    slug: 'tailoring-machine',
-    subtitle: 'Industrial, Domestic & Pressing Gear',
-    description: 'Commercial direct-drive sewing machines, Peacock heavy-duty pressing irons, overlock machines, and tailoring workshop equipment.',
-    image: '/peacock-iron.jpeg',
-    subcategories: ['Tailoring Irons & Equipment', 'Industrial Machines', 'Domestic Sewing', 'Overlock Weaving'],
-    features: ['Heavy Duty Durability', 'Superior Heat Retention', 'Smooth Flat Pressing', 'Workshop Ready']
+    id: 'lace',
+    name: 'Luxury Lace',
+    description: 'French Beaded, Swiss Voile, Cord Lace, Sequence & Net Gowns',
+    iconName: 'Crown',
+    badge: 'Luxury',
+  },
+  {
+    id: 'senator-atiku',
+    name: 'Senator & Atiku',
+    description: 'Austrian Guinea Brocade, Italian Wool, Bazin Riche & Cashmere',
+    iconName: 'Shirt',
+  },
+  {
+    id: 'sewing-machines',
+    name: 'Sewing Machines & Tools',
+    description: 'Direct Drive Industrial, Overlock, Domestic & Gravity Steam Irons',
+    iconName: 'Wrench',
+    badge: 'Heavy Duty',
+  },
+  {
+    id: 'accessories',
+    name: 'Shoes, Bags & Accessories',
+    description: 'Matching Italian Shoes & Bag Sets, Rhinestone Clutches & Millinery',
+    iconName: 'ShoppingBag',
+  },
+];
+
+export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: "prod-ankara-01",
+    name: "Original Hollandais Wax Ankara — Royal Peacock Motif",
+    category: "ankara",
+    categoryLabel: "Ankara Prints",
+    price: 38500,
+    originalPrice: 45000,
+    unit: "per 6 yards piece",
+    rating: 4.9,
+    reviewsCount: 42,
+    description: "100% premium combed cotton African wax print with dual-side rich color penetration. Vibrant peacock and botanical geometry, soft texture that softens further after washing. Ideal for Aso-Ebi, gowns, and traditional ceremonies.",
+    features: [
+      "100% Premium Cotton",
+      "6 Full Yards guaranteed length",
+      "Vibrant fade-resistant vegetable dyes",
+      "Dual-sided clear pattern print"
+    ],
+    inStock: true,
+    stockCount: 28,
+    isFeatured: true,
+    isBestSeller: true,
+    sku: "ANK-HOL-01",
+    material: "Combed Pure Cotton Wax",
+    colors: ["Royal Blue & Gold", "Teal & Emerald", "Wine & Marigold"],
+    wholesalePrice: 34000,
+    wholesaleMinYards: 30,
+    images: [
+      "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-lace-01",
+    name: "French Beaded Cord Lace — Champagne Blossom",
+    category: "lace",
+    categoryLabel: "Luxury Lace",
+    price: 75000,
+    originalPrice: 85000,
+    unit: "per 5 yards bundle",
+    rating: 5.0,
+    reviewsCount: 29,
+    description: "Heavyweight French cordonnet embroidery adorned with light-catching cut-glass seed beads, pearls, and metallic cord filigree. The ultimate fabric for brides, mummies-of-the-day, and prestigious owambe outings.",
+    features: [
+      "Hand-embellished crystal beads and pearls",
+      "5 Full Yards continuous length",
+      "Heavy scalloped borders on both selvages",
+      "Supple mesh netting that drapes gracefully"
+    ],
+    inStock: true,
+    stockCount: 15,
+    isFeatured: true,
+    isBestSeller: true,
+    sku: "LAC-FR-007",
+    material: "Polyester Cord with Beaded Embellishments",
+    colors: ["Champagne Gold", "Blush Pink", "Royal Lilac", "Emerald Green"],
+    wholesalePrice: 68000,
+    wholesaleMinYards: 25,
+    images: [
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-senator-01",
+    name: "Superfine Italian Wool Senator Fabric — Midnight Charcoal",
+    category: "senator-atiku",
+    categoryLabel: "Senator & Atiku",
+    price: 32000,
+    originalPrice: 38000,
+    unit: "per 4 yards (1 complete Kaftan set)",
+    rating: 4.8,
+    reviewsCount: 35,
+    description: "Wrinkle-resistant Italian blend wool with smooth matte drape and subtle micro-twill weave. Holds razor-sharp chest and sleeve creases throughout long event days.",
+    features: [
+      "High-twist anti-crease yarn",
+      "4 Yards standard executive cut",
+      "Breathable year-round weave",
+      "Machine and hand washable"
+    ],
+    inStock: true,
+    stockCount: 20,
+    isFeatured: true,
+    isNewArrival: true,
+    sku: "SEN-ITL-102",
+    material: "Italian Worsted Wool Blend",
+    colors: ["Midnight Charcoal", "Navy Sapphire", "Deep Burgundy", "Executive Black"],
+    wholesalePrice: 28500,
+    wholesaleMinYards: 20,
+    images: [
+      "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-sewing-01",
+    name: "Direct Drive Industrial Sewing Machine with Auto Thread Trimmer",
+    category: "sewing-machines",
+    categoryLabel: "Sewing Machines & Equipment",
+    price: 380000,
+    originalPrice: 420000,
+    unit: "complete set with table, stand & servo motor",
+    rating: 4.9,
+    reviewsCount: 19,
+    description: "Heavy-duty smart industrial lockstitch sewing machine with built-in energy saving servo motor (saves up to 70% electricity, generator-friendly). Features automatic needle positioning, auto thread trimmer, and LED workspace lighting.",
+    features: [
+      "Integrated 550W Silent Direct Drive Servo Motor",
+      "Automatic thread trimming and reverse feed",
+      "Adjustable speed up to 5,000 stitches per minute",
+      "Complete assembly including stand and laminated tabletop"
+    ],
+    inStock: true,
+    stockCount: 8,
+    isFeatured: true,
+    isBestSeller: true,
+    sku: "MC-IND-501",
+    material: "Heavy Cast Iron & Precision Steel Gears",
+    images: [
+      "https://images.unsplash.com/photo-1528458909336-e7a0adfed0a5?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-sewing-02",
+    name: "Industrial Heavy Duty Gravity Feed Steam Iron (Silver Star / Peacock Style)",
+    category: "sewing-machines",
+    categoryLabel: "Sewing Machines & Equipment",
+    price: 52000,
+    originalPrice: 60000,
+    unit: "complete kit with water bottle & teflon shoe",
+    rating: 4.9,
+    reviewsCount: 38,
+    description: "Professional tailor steam iron kit with 4-liter hanging gravity water tank, silicone hose, heat-proof resting pad, and non-stick teflon protective shoe to prevent fabric scorching on delicate lace and silks.",
+    features: [
+      "1000W high-efficiency heating base",
+      "4 Litre overhead gravity water reservoir",
+      "Includes non-shine teflon shoe",
+      "Heavy pressing weight for sharp lapels & hems"
+    ],
+    inStock: true,
+    stockCount: 15,
+    isFeatured: false,
+    isBestSeller: true,
+    sku: "IRN-GV-09",
+    material: "Anodized Aluminum Base & Heat-Resistant Thermoplastic",
+    images: [
+      "https://images.unsplash.com/photo-1517677208171-0bc6725a3e60?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-ankara-02",
+    name: "Exclusive High Target Wax Ankara — Sunburst Mandala",
+    category: "ankara",
+    categoryLabel: "Ankara Prints",
+    price: 24500,
+    originalPrice: 28000,
+    unit: "per 6 yards piece",
+    rating: 4.7,
+    reviewsCount: 22,
+    description: "Crisp finish wax block print with striking solar mandala motifs. Beautiful contrasting tones ideal for church ensembles, casual blazers, headwraps, and matching couple outfits.",
+    features: [
+      "High-density cotton weave",
+      "6 Yards full cut",
+      "Bright colors on both faces",
+      "Pre-shrunk fabric base"
+    ],
+    inStock: true,
+    stockCount: 14,
+    isFeatured: false,
+    isNewArrival: true,
+    sku: "ANK-HT-045",
+    material: "Cotton Blend Wax Print",
+    colors: ["Fiery Orange & Indigo", "Yellow & Forest Green"],
+    images: [
+      "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-lace-02",
+    name: "Swiss Voile Dry Cotton Lace — Geometric Filigree",
+    category: "lace",
+    categoryLabel: "Luxury Lace",
+    price: 62000,
+    originalPrice: 70000,
+    unit: "per 5 yards bundle",
+    rating: 4.9,
+    reviewsCount: 16,
+    description: "Original Swiss 100% fine cotton voile base with clean open-work eyelet embroidery. Cool on the skin in hot climates, light yet substantial.",
+    features: [
+      "100% pure Egyptian cotton voile",
+      "5 Yards piece",
+      "Cool & breathable under tropical sun",
+      "Smooth skin touch"
+    ],
+    inStock: true,
+    stockCount: 11,
+    isFeatured: false,
+    sku: "LAC-SW-088",
+    material: "Swiss Cotton Voile",
+    colors: ["Snow White", "Ivory Cream", "Sky Blue", "Mint Green"],
+    images: [
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-atiku-01",
+    name: "Authentic Austrian Guinea Brocade / Atiku Fabric",
+    category: "senator-atiku",
+    categoryLabel: "Senator & Atiku",
+    price: 58000,
+    originalPrice: 65000,
+    unit: "per 10 yards bundle",
+    rating: 5.0,
+    reviewsCount: 31,
+    description: "Original high-luster Austrian cotton brocade (Bazin Riche / Getzner grade). Shimmering jacquard damask finish with crisp sound and majestic body for executive traditional wear.",
+    features: [
+      "100% High-grade lustered combed cotton",
+      "10 Yards full standard bundle",
+      "Permanent silky sheen",
+      "Unmatched structural crispness"
+    ],
+    inStock: true,
+    stockCount: 12,
+    isFeatured: true,
+    sku: "ATK-AUS-001",
+    material: "100% Pure Combed Damask Cotton",
+    colors: ["Pure White Shimmer", "Jet Black", "Light Gold", "Silver Grey"],
+    wholesalePrice: 52000,
+    wholesaleMinYards: 50,
+    images: [
+      "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-acc-01",
+    name: "Italian Leather Crystal Embellished Party Shoes & Matching Handbag Set",
+    category: "accessories",
+    categoryLabel: "Shoes, Bags & Accessories",
+    price: 48000,
+    originalPrice: 55000,
+    unit: "set (Shoes + Matching Evening Bag)",
+    rating: 4.9,
+    reviewsCount: 27,
+    description: "Stunning Italian pointed-toe slingback heels with ergonomic cushioned insole and matching rhinestone evening clutch. Built for weddings, coronations, and owambe parties.",
+    features: [
+      "Heel height: 3.5 inches comfortable stiletto",
+      "Matching evening clutch bag with chain strap",
+      "Heavy crystal brooch centerpiece",
+      "Sizes EU 38 to 43 available"
+    ],
+    inStock: true,
+    stockCount: 8,
+    isFeatured: true,
+    isBestSeller: true,
+    sku: "ACC-SHB-77",
+    material: "Italian Synthetic Leather & Crystal Brooch",
+    colors: ["Rose Gold", "Royal Silver", "Emerald Green", "Wine Red"],
+    images: [
+      "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80"
+    ]
+  },
+  {
+    id: "prod-sewing-03",
+    name: "4-Thread Industrial Overlock / Interlocking Machine",
+    category: "sewing-machines",
+    categoryLabel: "Sewing Machines & Equipment",
+    price: 295000,
+    originalPrice: 330000,
+    unit: "complete set with table & motor",
+    rating: 4.8,
+    reviewsCount: 14,
+    description: "High-speed 4-thread overlock serger machine for clean seam edges, knitwear, and tailoring fabric reinforcement. Prevents fabric fraying on Ankara, wool, and lace.",
+    features: [
+      "Dual needle 4-thread chainstitch",
+      "Differential feed ratio 0.7 - 2.0",
+      "Ultra-quiet built-in servo motor",
+      "Needle thread cooler"
+    ],
+    inStock: true,
+    stockCount: 5,
+    sku: "MC-OVK-402",
+    material: "Industrial Alloy & Cast Metal",
+    images: [
+      "https://images.unsplash.com/photo-1605518216938-7c31b7b14ad0?auto=format&fit=crop&w=800&q=80"
+    ]
   }
 ];
 
-export const TAILORING_YARD_GUIDES: TailoringYardGuide[] = [
+export const INITIAL_REVIEWS: CustomerReview[] = [
   {
-    outfitName: 'Full 3-Piece Grand Agbada with Buba & Sokoto',
-    gender: 'Men',
-    recommendedYards: 10,
-    yardRange: '8 - 10 Yards',
-    suggestedFabrics: ['Atiku Cotton', 'Guinea Brocade (Bazin Riche)', 'Senator Cashmere'],
-    description: 'Generous 10-yard cut provides ample fullness for royal drape and high-cap sleeve folds.'
-  },
-  {
-    outfitName: 'Classic Senator Native Suit (Top & Trouser)',
-    gender: 'Men',
-    recommendedYards: 4,
-    yardRange: '4 Yards',
-    suggestedFabrics: ['Super 150s Wool Cashmere', 'Wool Blend Suiting'],
-    description: 'Standard 4 yards allows full shirt length with chest pockets and tailored trouser cuts.'
-  },
-  {
-    outfitName: 'Long Owambe Fitted Corset Gown with Train',
-    gender: 'Women',
-    recommendedYards: 5,
-    yardRange: '5 - 6 Yards',
-    suggestedFabrics: ['Swiss Voile Lace', 'French Beaded Net Lace', 'Sequined Lace'],
-    description: '5 yards is the standard Nigerian bundle size for floor-length luxury gowns.'
-  },
-  {
-    outfitName: 'Six-Piece Mermaid Skirt and Peplum Blouse',
-    gender: 'Women',
-    recommendedYards: 6,
-    yardRange: '6 Yards (1 Bundle)',
-    suggestedFabrics: ['Dutch Wax Ankara', 'African Wax Cotton'],
-    description: 'Full 6-yard bundle allows perfect pattern alignment on flared panels and peplum pleats.'
-  },
-  {
-    outfitName: 'Simple Kaftan / Short-Sleeve Daily Native',
-    gender: 'General',
-    recommendedYards: 3.5,
-    yardRange: '3 - 3.5 Yards',
-    suggestedFabrics: ['Cotton Atiku', 'Lightweight Senator Wool'],
-    description: 'Ideal economic cut for casual weekday or Friday native shirts and trousers.'
-  }
-];
-
-export const CUSTOMER_TESTIMONIALS: CustomerTestimonial[] = [
-  {
-    id: 'rev-01',
-    customerName: 'Alhaja Kudirat Adeleke',
-    location: 'Bodija, Ibadan',
-    title: 'Aso-Ebi Lead Organizer',
-    comment: 'We ordered 85 bundles of Swiss Voile Lace and matching shoe/bag sets for my daughter wedding. Everything arrived exactly as pictured and the quality was top tier. Our guests were thrilled!',
+    id: "rev-1",
+    author: "Alhaja Folashade B.",
+    location: "Ikeja, Lagos",
     rating: 5,
-    date: '3 weeks ago',
-    verifiedBuyer: true,
-    fabricBought: 'Swiss Voile Lace & Matching Shoe/Bag Set'
+    date: "2 days ago",
+    comment: "I ordered 45 pieces of the Royal Peacock Hollandais for my daughter's introduction ceremony. The quality is authentic, colors didn’t bleed after washing, and delivery to our hotel in Ikeja was same-day! God bless Ayobami SAM Venture.",
+    verifiedPurchase: true,
+    productName: "Original Hollandais Wax Ankara"
   },
   {
-    id: 'rev-02',
-    customerName: 'Chief Babatunde Ogundimu',
-    location: 'Victoria Island, Lagos',
-    title: 'VIP Senator Client',
-    comment: 'The Italian burnished loafers and Super 150s cashmere senator material were delivered promptly. The leather is soft, durable, and comfortable all day during chieftaincy meetings.',
+    id: "rev-2",
+    author: "Engr. Emeka Okafor",
+    location: "Port Harcourt, Rivers",
     rating: 5,
-    date: '1 month ago',
-    verifiedBuyer: true,
-    fabricBought: 'Super 150s Cashmere & Italian Loafers'
+    date: "1 week ago",
+    comment: "The direct drive industrial machine arrived in Port Harcourt within 48 hours via interstate logistics. Smooth, very silent, and doesn’t consume high generator fuel. Best dealer in Lagos.",
+    verifiedPurchase: true,
+    productName: "Direct Drive Industrial Sewing Machine"
   },
   {
-    id: 'rev-03',
-    customerName: 'Mrs. Funmilayo Bakare',
-    location: 'Garki, Abuja',
-    title: 'Fashion Academy Director',
-    comment: 'We purchased 6 industrial direct-drive sewing machines and Butterfly sets for our tailoring training institute. Smooth silent operation, fast delivery, and very responsive customer support on WhatsApp.',
+    id: "rev-3",
+    author: "Mrs. Titilayo Adebisi",
+    location: "Surulere, Lagos",
     rating: 5,
-    date: '2 months ago',
-    verifiedBuyer: true,
-    fabricBought: 'Industrial Direct-Drive Machines'
+    date: "2 weeks ago",
+    comment: "The French Beaded Lace is simply breath-taking! My tailor in Surulere said the stones are firmly fixed and didn’t break his needle. Everyone at the party was asking where I got it.",
+    verifiedPurchase: true,
+    productName: "French Beaded Cord Lace"
+  },
+  {
+    id: "rev-4",
+    author: "Pastor Babatunde A.",
+    location: "Abuja, FCT",
+    rating: 5,
+    date: "3 weeks ago",
+    comment: "The Austrian Guinea Brocade is top tier. Crisp sound, luxurious shine, exactly what you expect from Balogun market wholesale merchants.",
+    verifiedPurchase: true,
+    productName: "Authentic Austrian Guinea Brocade"
   }
 ];

@@ -1,191 +1,183 @@
 import React, { useState } from 'react';
-import { StoreSettings } from '../types';
-import { Phone, MessageCircle, MapPin, Clock, Truck, X, ExternalLink } from 'lucide-react';
-import { FacebookIcon, TikTokIcon } from './SocialIcons';
-import { OFFICIAL_LOGO_URL } from '../data/initialData';
+import { 
+  MapPin, 
+  Phone, 
+  MessageCircle, 
+  Mail, 
+  Clock, 
+  Building, 
+  Copy, 
+  Check,
+  Send
+} from 'lucide-react';
+import { STORE_INFO } from '../data/initialData';
 
-interface ContactSectionProps {
-  settings: StoreSettings;
-}
+export const ContactSection: React.FC = () => {
+  const [inquiryName, setInquiryName] = useState('');
+  const [inquiryPhone, setInquiryPhone] = useState('');
+  const [inquiryMessage, setInquiryMessage] = useState('');
+  const [copiedBank, setCopiedBank] = useState(false);
 
-export const ContactSection: React.FC<ContactSectionProps> = ({ settings }) => {
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const facebookUrl = settings.facebook || 'https://www.facebook.com/share/1BeLmWzV8P/';
-  const tiktokUrl = settings.tiktok || 'https://www.tiktok.com/@ayobami.samuel31';
-  const whatsappUrl = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(`Hello ${settings.storeName}, I want to make an inquiry.`)}`;
-  const logoSrc = settings.logoUrl || OFFICIAL_LOGO_URL;
+  const handleSendInquiry = (e: React.FormEvent) => {
+    e.preventDefault();
+    const msg = encodeURI(
+      `Hello Ayobami SAM Venture, I have an inquiry:\n` +
+      `👤 *Name:* ${inquiryName}\n` +
+      `📞 *Phone:* ${inquiryPhone}\n` +
+      `💬 *Message:* ${inquiryMessage}`
+    );
+    window.open(`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}?text=${msg}`, '_blank');
+  };
+
+  const copyAccount = () => {
+    navigator.clipboard.writeText(STORE_INFO.accountDetails.accountNumber);
+    setCopiedBank(true);
+    setTimeout(() => setCopiedBank(false), 2000);
+  };
 
   return (
-    <section className="py-6 sm:py-8 bg-[#FAF8F5] border-b border-[#E8E2D9]" id="contact-section">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="contact" className="py-12 px-4 sm:px-6 max-w-7xl mx-auto border-t border-stone-200">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* Compact Single Straight Line of Icon Stickers */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-[#E2D9CE] shadow-sm flex flex-col items-center justify-center gap-3">
-          
-          <div className="flex items-center justify-center gap-3 sm:gap-6 overflow-x-auto whitespace-nowrap scrollbar-none max-w-full py-1 px-2">
-            
-            {/* Sticker 1: WhatsApp (Inquiries & Price) */}
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Product Price & WhatsApp Inquiries"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#25D366] text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="WhatsApp Price & Product Inquiries"
-            >
-              <MessageCircle className="w-6 h-6 sm:w-7 sm:h-7 group-hover:rotate-6 transition-transform" />
-            </a>
-
-            {/* Sticker 2: Phone Call (Price & Orders) */}
-            <a
-              href="tel:08033810865"
-              title="Direct Phone Inquiry Line"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#1B4332] text-[#D4AF37] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="Direct Phone Inquiry Line"
-            >
-              <Phone className="w-6 h-6 sm:w-7 sm:h-7 group-hover:rotate-6 transition-transform" />
-            </a>
-
-            {/* Sticker 3: Facebook Profile */}
-            <a
-              href={facebookUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Official Facebook Store Profile"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#1877F2] text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="Facebook Profile"
-            >
-              <FacebookIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white group-hover:rotate-6 transition-transform" />
-            </a>
-
-            {/* Sticker 4: TikTok Channel */}
-            <a
-              href={tiktokUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="TikTok Videos & Profile"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-black text-[#25F4EE] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="TikTok Profile"
-            >
-              <TikTokIcon className="w-6 h-6 sm:w-7 sm:h-7 text-[#25F4EE] group-hover:rotate-6 transition-transform" />
-            </a>
-
-            {/* Sticker 5: Store Location Photo & Address */}
-            <button
-              type="button"
-              onClick={() => setShowLocationModal(true)}
-              title="View Physical Shop Location Photo & Address"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#B07D38] text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0 cursor-pointer relative overflow-hidden"
-              aria-label="Store Location & Balogun Market Address"
-            >
-              <img src="/shop-location.jpg" alt="Shop" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-20 transition-opacity" />
-              <MapPin className="w-6 h-6 sm:w-7 sm:h-7 relative z-10 group-hover:rotate-6 transition-transform text-white drop-shadow" />
-            </button>
-
-            {/* Sticker 6: Delivery & Dispatch */}
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Nationwide & International Delivery"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#2D6A4F] text-white flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="Delivery & Shipping Information"
-            >
-              <Truck className="w-6 h-6 sm:w-7 sm:h-7 group-hover:rotate-6 transition-transform" />
-            </a>
-
-            {/* Sticker 7: 24/7 Service Schedule */}
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="24/7 Ordering & Open Hours"
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#F3E8D6] text-[#B07D38] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform shadow-md group shrink-0"
-              aria-label="24/7 Open Hours"
-            >
-              <Clock className="w-6 h-6 sm:w-7 sm:h-7 group-hover:rotate-6 transition-transform" />
-            </a>
-
+        {/* Left Info Column */}
+        <div className="lg:col-span-6 space-y-6">
+          <div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100/60 px-2.5 py-0.5 rounded-full">
+              Physical Location &amp; Merchant Support
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 mt-2">
+              Visit Us in Balogun Market or Chat on WhatsApp
+            </h2>
+            <p className="text-xs sm:text-sm text-stone-500 mt-1">
+              Have questions about fabric rolls, sewing machine motor installation, or custom Aso-Ebi orders? Reach out directly.
+            </p>
           </div>
 
+          <div className="space-y-4 text-xs">
+            <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 shrink-0">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-stone-900 text-sm">Physical Shop Address</h4>
+                <p className="text-stone-600 mt-0.5 leading-relaxed">{STORE_INFO.address}</p>
+                <p className="text-[11px] text-amber-800 font-medium mt-1">Landmark: {STORE_INFO.landmark}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+              <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700 shrink-0">
+                <MessageCircle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-stone-900 text-sm">Direct Phone &amp; WhatsApp</h4>
+                <p className="text-stone-600 mt-0.5">{STORE_INFO.phone}</p>
+                <div className="flex gap-2 mt-2">
+                  <a
+                    href={`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] flex items-center gap-1 shadow-xs"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span>WhatsApp Chat</span>
+                  </a>
+                  <a
+                    href={`tel:${STORE_INFO.whatsapp}`}
+                    className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-[11px] flex items-center gap-1"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Call Store</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3.5 p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+              <div className="p-2.5 rounded-xl bg-amber-50 text-amber-700 shrink-0">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-stone-900 text-sm">Working Hours</h4>
+                <p className="text-stone-600 mt-0.5">{STORE_INFO.businessHours}</p>
+                <p className="text-[11px] text-stone-400 mt-0.5">Sunday: Closed (Church &amp; Family rest)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Inquiry Form */}
+        <div className="lg:col-span-6 bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-md">
+          <h3 className="text-lg font-serif font-bold text-stone-900 mb-1">
+            Send an Inquiry or Aso-Ebi Quote Request
+          </h3>
+          <p className="text-xs text-stone-500 mb-5">
+            Get an instant response from our sales and waybill team.
+          </p>
+
+          <form onSubmit={handleSendInquiry} className="space-y-4 text-xs">
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1">Your Name *</label>
+              <input
+                type="text"
+                required
+                value={inquiryName}
+                onChange={(e) => setInquiryName(e.target.value)}
+                placeholder="e.g. Chief Adeleke / Mrs. Johnson"
+                className="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1">Phone / WhatsApp *</label>
+              <input
+                type="tel"
+                required
+                value={inquiryPhone}
+                onChange={(e) => setInquiryPhone(e.target.value)}
+                placeholder="e.g. 08146243747"
+                className="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1">Inquiry / Custom Fabric Specification *</label>
+              <textarea
+                rows={3}
+                required
+                value={inquiryMessage}
+                onChange={(e) => setInquiryMessage(e.target.value)}
+                placeholder="Tell us what fabric pattern, sewing machine brand, or Aso-Ebi quantity you need..."
+                className="w-full p-2.5 rounded-xl border border-stone-300 focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
+            >
+              <Send className="w-4 h-4" />
+              <span>Send Inquiry via WhatsApp</span>
+            </button>
+          </form>
+
+          {/* Quick Bank Details Reminder */}
+          <div className="mt-6 pt-4 border-t border-stone-100 flex items-center justify-between text-xs text-stone-600 bg-stone-50 p-3 rounded-xl">
+            <div>
+              <span className="text-[10px] text-stone-400 block">Bank Account:</span>
+              <span className="font-bold text-stone-900">{STORE_INFO.accountDetails.accountNumber}</span> • {STORE_INFO.accountDetails.accountName}
+            </div>
+            <button
+              onClick={copyAccount}
+              className="p-1.5 rounded-lg bg-white border border-stone-200 text-stone-700 hover:text-amber-800"
+              title="Copy account number"
+            >
+              {copiedBank ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
 
       </div>
-
-      {/* SHOP LOCATION PHOTO & MAP LIGHTBOX MODAL */}
-      {showLocationModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border-2 border-[#D4AF37] relative">
-            
-            <button
-              onClick={() => setShowLocationModal(false)}
-              className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            {/* Location Image with Brand Overlay */}
-            <div className="relative">
-              <img
-                src="/shop-location.jpg"
-                alt="Ayobami SAM Ventures Shop Location in Balogun Market, Lagos"
-                className="w-full h-64 sm:h-72 object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end p-5">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 rounded bg-[#D4AF37] text-[#0F2E22] text-[10px] font-black uppercase tracking-wider">
-                    Official Physical Storefront
-                  </span>
-                </div>
-                <h3 className="text-xl font-black text-white">
-                  {settings.storeName}
-                </h3>
-                <p className="text-xs text-amber-200 font-bold mt-1 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span>37/39 Balogun West, Molake House, Lagos Island, Nigeria</span>
-                </p>
-              </div>
-
-              {/* Floating Logo Badge */}
-              <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md p-2 rounded-2xl shadow-lg border border-white">
-                <img src={logoSrc} alt="ASV Logo" className="w-10 h-10 object-contain" />
-              </div>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <p className="text-xs text-gray-600 leading-relaxed font-medium">
-                Visit our storefront at Balogun Market, Lagos for direct retail purchases, wholesale carton bookings, fabric inspection, and industrial sewing machine testing.
-              </p>
-
-              <div className="flex items-center gap-3 pt-2">
-                <a
-                  href={`https://maps.google.com/?q=${encodeURIComponent(settings.address)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 rounded-xl bg-[#0F2E22] hover:bg-[#1B4332] text-white font-black text-xs text-center flex items-center justify-center gap-1.5 shadow"
-                >
-                  <MapPin className="w-4 h-4 text-[#D4AF37]" />
-                  <span>Open in Google Maps</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 py-3 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-black text-xs text-center flex items-center justify-center gap-1.5 shadow"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Chat Store Manager</span>
-                </a>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
     </section>
   );
 };
-

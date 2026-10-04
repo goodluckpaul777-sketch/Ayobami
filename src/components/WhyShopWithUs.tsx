@@ -1,79 +1,87 @@
 import React from 'react';
-import { ShieldCheck, Ruler, Truck, MessageCircle, Award, Shirt, Footprints, Scissors } from 'lucide-react';
+import { ShieldCheck, Truck, Video, Award, Sparkles, Clock } from 'lucide-react';
+import { STORE_INFO } from '../data/initialData';
 
 export const WhyShopWithUs: React.FC = () => {
-  const points = [
-    {
-      icon: <Award className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Guaranteed Authentic Quality',
-      desc: '100% combed cotton Ankara, luxury Swiss voile lace, handcrafted Italian calfskin shoes, and heavy-duty direct-drive sewing machines.'
-    },
-    {
-      icon: <Shirt className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Cloths & Fabrics by the Yard',
-      desc: 'Full 36-inch accurate yard measurements with zero short-cutting. Available for single outfit cuts or bulk Aso-Ebi rolls.'
-    },
-    {
-      icon: <Footprints className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Handcrafted Native Shoes',
-      desc: 'Italian calfskin native loafers and sparkling crystal Owambe party heels with matching designer clutches.'
-    },
-    {
-      icon: <Scissors className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Commercial Sewing Machines',
-      desc: 'Direct-drive industrial lockstitch and Butterfly domestic machines equipped with complete wooden tables, stands, and warranty.'
-    },
-    {
-      icon: <MessageCircle className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Instant WhatsApp Pricing Inquiry',
-      desc: 'Chat directly on WhatsApp to get real-time price quotes, video inspections, custom yardage advice, and fast invoice confirmation.'
-    },
-    {
-      icon: <Truck className="w-7 h-7 text-[#D4AF37]" />,
-      title: 'Nationwide & Overseas Cargo',
-      desc: 'Reliable dispatch to all 36 Nigerian states via park couriers, doorstep delivery in Lagos, and express air cargo for diaspora clients.'
-    }
-  ];
-
   return (
-    <section className="py-16 sm:py-24 bg-white border-b border-[#E8E2D9]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16 space-y-3">
-          <span className="text-xs font-black uppercase tracking-widest text-[#0F2E22] bg-[#FAF8F5] border border-[#D4AF37]/50 px-4 py-1.5 rounded-full">
-            EXPERIENCE & INTEGRITY
+    <section className="py-12 px-4 sm:px-6 max-w-7xl mx-auto">
+      <div className="bg-gradient-to-br from-stone-900 via-stone-900 to-amber-950 text-white rounded-3xl p-6 sm:p-10 shadow-xl relative overflow-hidden">
+        {/* Background glow */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div className="max-w-3xl mb-8">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/30">
+            The Ayobami SAM Venture Standard
           </span>
-          <h2 className="text-xl sm:text-3xl lg:text-5xl font-black text-[#0F2E22] tracking-tight">
-            WHY AYOBAMI SAM VENTURES?
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white mt-3">
+            Why Discerning Tailors &amp; Owambe Planners Choose Us
           </h2>
-          <p className="text-sm sm:text-base text-gray-600 font-medium">
-            A premier Nigerian commercial hub dedicated to superior textiles, footwear, and tailoring machinery.
+          <p className="text-xs sm:text-sm text-stone-300 mt-2 font-light">
+            We operate physically in the heart of Balogun Market, Lagos Island. No dropshipping, no counterfeit fabrics.
           </p>
         </div>
 
-        {/* 6 Feature Blocks (Spacious & Bold) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {points.map((pt, idx) => (
-            <div
-              key={idx}
-              className="bg-[#FAF8F5] border-2 border-[#E8E2D9] rounded-3xl p-7 sm:p-8 hover:border-[#D4AF37] hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-            >
-              <div>
-                <div className="w-14 h-14 rounded-2xl bg-[#0F2E22] flex items-center justify-center mb-5 shadow-md">
-                  {pt.icon}
-                </div>
-                <h3 className="text-lg sm:text-xl font-black text-[#0F2E22] mb-2">
-                  {pt.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
-                  {pt.desc}
-                </p>
-              </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5" />
             </div>
-          ))}
-        </div>
+            <h3 className="font-bold text-sm text-white">100% Genuine Fabrics</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Every yard of Hollandais Wax, Swiss Voile, and Austrian Guinea Brocade is vetted for authentic weight, fiber purity, and dye color-fastness.
+            </p>
+          </div>
 
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <Video className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Live WhatsApp Video Inspection</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Clients outside Lagos can request a live WhatsApp video call to inspect fabric texture, color under natural daylight, and machine operation before dispatch.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <Truck className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Interstate Waybill to All 36 States</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              We partner with GIGM, Peace Mass Transit, Young Shall Grow, and ABC Transport for prompt delivery to any state capital in Nigeria within 24–48 hours.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <Award className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Direct Importer Wholesale Rates</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Enjoy substantial bulk savings for Aso-Ebi groups, wedding families, and fashion design academies purchasing in bundles.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Tested Sewing Equipment</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Industrial sewing machines and gravity steam irons are assembled, oiled, and test-run by seasoned technicians before hand-over.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-2xl bg-stone-800/60 border border-stone-700/80 space-y-2">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <Clock className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-sm text-white">Same-Day Dispatch in Lagos</h3>
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Fast bike and dispatch courier coverage across Lagos Island, Ikoyi, Victoria Island, Ikeja, Surulere, and Lekki.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

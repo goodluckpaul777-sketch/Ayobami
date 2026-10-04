@@ -1,166 +1,73 @@
-export type MainSectionType = 'cloths' | 'shoes' | 'tailoring-machine';
-
-export interface FabricProduct {
+export interface Product {
   id: string;
   name: string;
-  mainSection: MainSectionType; // 'cloths' | 'shoes' | 'tailoring-machine'
-  category: string; // e.g. "Ankara Prints", "Swiss Lace", "Men's Native Loafers", "Industrial Sewing Machine"
-  categorySlug: string;
+  category: 'ankara' | 'lace' | 'senator-atiku' | 'sewing-machines' | 'accessories' | string;
+  categoryLabel: string;
+  price: number;
+  originalPrice?: number;
+  unit: string;
+  rating: number;
+  reviewsCount: number;
   description: string;
-  availableStock?: number; // Stock quantity in units / yards
-  minimumOrder?: number; // Minimum order quantity (e.g. 1 yard or 1 machine or 1 pair)
-  unitLabel?: string; // 'yard' | 'yards' | 'machine' | 'pair' | 'piece' | 'set' | 'pack'
-  image: string;
-  galleryImages?: string[];
-  colors: string[];
-  fabricType: string; // Material / Machine specification / Texture
-  isNewArrival: boolean;
-  isFeatured: boolean;
+  features: string[];
   inStock: boolean;
-  rating?: number;
-  reviewCount?: number;
-  suitableFor: string[];
-  textureNote?: string;
-  origin?: string;
-  isWholesaleAvailable?: boolean;
-  wholesaleNote?: string;
-  badge?: string;
-  designGroupId?: string; // Grouping ID for products sharing the exact same structural design in different colors
-  designGroupName?: string; // Display title of the matching design line
-  colorVariant?: string; // Color name of this specific variant
-  isMatchingSet?: boolean; // True if item is a matching 2-in-1 shoe and bag set
-  designType?: 'matching-group' | 'distinct-design'; // 'matching-group' or 'distinct-design'
+  stockCount: number;
+  isFeatured?: boolean;
+  isBestSeller?: boolean;
+  isNewArrival?: boolean;
+  sku?: string;
+  material?: string;
+  colors?: string[];
+  wholesalePrice?: number;
+  wholesaleMinYards?: number;
+  images: string[];
 }
 
-export interface InquiryItem {
-  product: FabricProduct;
+export interface CartItem {
+  product: Product;
   quantity: number;
   selectedColor?: string;
-  customNotes?: string;
 }
 
-// Backward compatibility alias for CartItem
-export type CartItem = InquiryItem;
-
-export interface SectionCategoryInfo {
-  id: MainSectionType;
-  name: string;
-  slug: MainSectionType;
-  subtitle: string;
-  description: string;
-  image: string;
-  subcategories: string[];
-  features: string[];
-}
-
-export interface CategoryInfo {
+export interface CustomerReview {
   id: string;
-  name: string;
-  slug: string;
-  section: MainSectionType;
-  description: string;
-  tagline: string;
-  image: string;
-  popularUses: string;
-}
-
-export interface NigerianStateDelivery {
-  name: string;
-  rate: number;
-  deliveryDays: string;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  mainSection: MainSectionType;
-  description: string;
-  itemCount?: number;
-}
-
-export interface CustomerTestimonial {
-  id: string;
-  customerName: string;
+  author: string;
   location: string;
-  title: string;
-  comment: string;
   rating: number;
   date: string;
-  verifiedBuyer: boolean;
-  fabricBought?: string;
+  comment: string;
+  verifiedPurchase: boolean;
+  productName: string;
 }
 
-export interface StoreSettings {
-  storeName: string;
-  tagline: string;
-  logoUrl?: string;
-  phone: string;
-  phoneNumbers?: string[];
-  secondaryPhone?: string;
-  whatsapp: string;
-  email: string;
-  facebook?: string;
-  tiktok?: string;
-  shopNameLocation?: string;
-  address: string;
-  marketLocation: string;
-  city: string;
-  state: string;
-  country?: string;
-  businessType?: string;
-  customerReach?: string;
-  openingHours: string;
-  bankDetails: {
-    bankName: string;
-    accountNumber: string;
-    accountName: string;
-  };
-  stateDeliveryRates: Record<string, NigerianStateDelivery>;
-  freeDeliveryThreshold?: number;
-  announcement?: string;
-  themeColor?: string;
-  aboutText?: string;
-  enableWhatsAppDirect?: boolean;
-}
-
-export interface CustomerInquiryInfo {
-  fullName: string;
-  phone: string;
-  whatsapp: string;
-  state: string;
-  city: string;
-  address?: string;
-  inquiryType: 'retail' | 'wholesale' | 'general_question' | 'machine_quotation';
+export interface OrderDetails {
+  customerName: string;
+  phoneNumber: string;
+  email?: string;
+  deliveryAddress: string;
+  stateOrCity: string;
+  paymentMethod: 'whatsapp' | 'bank_transfer' | 'pickup';
   notes?: string;
-}
-
-export interface InquiryRecord {
-  id: string;
-  inquiryNumber: string;
-  createdAt: string;
-  customer: CustomerInquiryInfo;
   items: {
     productId: string;
     productName: string;
-    category: string;
-    mainSection: MainSectionType;
+    unit: string;
+    price: number;
     quantity: number;
-    unitLabel?: string;
-    image: string;
-    selectedColor?: string;
+    color?: string;
   }[];
-  status: 'New Inquiry' | 'Contacted on WhatsApp' | 'Quotation Sent' | 'Order Confirmed' | 'Dispatched' | 'Completed';
+  subtotal: number;
+  shippingFee: number;
+  grandTotal: number;
+  createdAt?: string;
 }
 
-// OrderRecord alias for backward compatibility
-export type OrderRecord = InquiryRecord;
+export type CategoryId = 'all' | 'ankara' | 'lace' | 'senator-atiku' | 'sewing-machines' | 'accessories';
 
-export interface TailoringYardGuide {
-  outfitName: string;
-  gender: 'Men' | 'Women' | 'Kids' | 'General';
-  recommendedYards: number;
-  yardRange: string;
-  suggestedFabrics: string[];
+export interface CategoryInfo {
+  id: CategoryId;
+  name: string;
   description: string;
+  iconName: string;
+  badge?: string;
 }

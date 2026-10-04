@@ -1,335 +1,236 @@
 import React, { useState } from 'react';
-import { Menu, X, MessageCircle, Settings, Search, Footprints, Scissors, Shirt, Shield, ShoppingBag } from 'lucide-react';
-import { StoreSettings, InquiryItem, MainSectionType } from '../types';
-import { FacebookIcon, TikTokIcon } from './SocialIcons';
-import { OFFICIAL_LOGO_URL } from '../data/initialData';
+import { 
+  ShoppingBag, 
+  Search, 
+  Menu, 
+  X, 
+  Calculator, 
+  Settings, 
+  Phone, 
+  MapPin, 
+  Sparkles,
+  MessageCircle
+} from 'lucide-react';
+import { STORE_INFO, CATEGORIES } from '../data/initialData';
+import { CategoryId } from '../types';
 
 interface HeaderProps {
-  settings: StoreSettings;
-  inquiryItems: InquiryItem[];
-  onOpenInquiryBag: () => void;
+  cartCount: number;
+  onOpenCart: () => void;
   onOpenAdmin: () => void;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
-  activeSection: 'all' | MainSectionType;
-  setActiveSection: (section: 'all' | MainSectionType) => void;
+  onOpenEstimator: () => void;
+  selectedCategory: CategoryId;
+  onSelectCategory: (cat: CategoryId) => void;
   searchQuery: string;
-  setSearchQuery: (query: string) => void;
+  onSearchChange: (query: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  settings,
-  inquiryItems,
-  onOpenInquiryBag,
+  cartCount,
+  onOpenCart,
   onOpenAdmin,
-  activeTab,
-  setActiveTab,
-  activeSection,
-  setActiveSection,
+  onOpenEstimator,
+  selectedCategory,
+  onSelectCategory,
   searchQuery,
-  setSearchQuery,
+  onSearchChange,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const totalInquiryCount = inquiryItems.reduce((sum, item) => sum + item.quantity, 0);
-
-  const handleNavClick = (tab: string, section?: 'all' | MainSectionType) => {
-    setActiveTab(tab);
-    if (section !== undefined) {
-      setActiveSection(section);
-    }
-    setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const logoSrc = settings.logoUrl || OFFICIAL_LOGO_URL;
-
   return (
-    <header className="sticky top-0 z-40 bg-white border-b-2 border-[#E8E2D9] shadow-md">
-      {/* Main Brand & Identity Bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-2.5 sm:py-3 flex items-center justify-between gap-3">
-          
-          {/* Brand Logo & Name */}
-          <div 
-            onClick={() => handleNavClick('home', 'all')}
-            className="cursor-pointer flex items-center gap-2.5 sm:gap-4 group"
-          >
-            <div className="relative">
-              {logoSrc && (
-                <img
-                  src={logoSrc}
-                  alt="Ayobami SAM Ventures Official Logo"
-                  className="w-10 h-10 sm:w-14 sm:h-14 object-contain drop-shadow-sm group-hover:scale-105 transition-transform duration-300"
-                />
-              )}
-            </div>
-            <div>
-              <h1 className="text-base sm:text-xl lg:text-2xl font-black tracking-tight text-[#0F2E22] group-hover:text-[#2D6A4F] transition-colors leading-tight">
-                {settings.storeName}
-              </h1>
-              <p className="text-[9px] sm:text-[11px] font-black text-[#D4AF37] uppercase tracking-wider mt-0.5 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse"></span>
-                <span>37/39 Balogun West, Molake House, Lagos</span>
-              </p>
-            </div>
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200/80 shadow-xs">
+      {/* Top Announcement Bar */}
+      <div className="bg-gradient-to-r from-amber-900 via-stone-900 to-amber-950 text-white text-xs py-2 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] sm:text-xs">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              Wholesale & Retail
+            </span>
+            <span className="text-stone-300 flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-amber-400" />
+              Balogun Market, Lagos Island • Nationwide Waybill Across Nigeria
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <a 
+              href={`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}?text=Hello%20Ayobami%20SAM%20Venture,%20I%20want%20to%20inquire%20about%20your%20fabrics%20and%20sewing%20machines`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 font-medium text-amber-300 hover:text-white transition-colors"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20" />
+              WhatsApp: {STORE_INFO.phone}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Header Bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5">
+        <div className="flex items-center justify-between gap-3 sm:gap-6">
+          {/* Logo & Brand */}
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => onSelectCategory('all')} 
+              className="text-left group flex items-center gap-2.5"
+            >
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center text-white shadow-md shadow-amber-900/20 group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5 text-amber-200" />
+              </div>
+              <div>
+                <div className="text-base sm:text-lg font-bold tracking-tight text-stone-900 font-serif group-hover:text-amber-700 transition-colors">
+                  Ayobami SAM Venture
+                </div>
+                <div className="text-[10px] sm:text-xs text-stone-500 font-medium tracking-wide">
+                  Fabrics, Machines & Accessories • Lagos
+                </div>
+              </div>
+            </button>
           </div>
 
-          {/* Desktop Search Bar */}
-          <div className="hidden lg:flex flex-1 max-w-md mx-6">
+          {/* Search Input - Desktop */}
+          <div className="hidden md:flex flex-1 max-w-md relative">
             <div className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search Ankara, Lace, Shoes, Sewing Machines..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl border-2 border-[#E8E2D9] bg-[#FAF8F5] text-sm text-[#0F2E22] placeholder-gray-400 focus:outline-none focus:border-[#0F2E22] focus:bg-white transition-all font-semibold"
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Search Ankara, Lace, Atiku, Sewing Machines, Shoes..."
+                className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-stone-100 hover:bg-stone-50 focus:bg-white border border-stone-200 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all placeholder:text-stone-400"
               />
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-1.5 py-0.5 rounded font-bold"
+                  onClick={() => onSearchChange('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5"
                 >
-                  ✕
+                  <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
           </div>
 
-          {/* Right Header Controls (Inquiry Bag & Admin Portal) */}
-          <div className="flex items-center gap-3">
-            
-            {/* Inquiry Bag Button */}
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Yard Estimator Button */}
             <button
-              onClick={onOpenInquiryBag}
-              className="relative p-3 rounded-2xl bg-[#FAF8F5] hover:bg-[#F0EAE1] text-[#0F2E22] border-2 border-[#E8E2D9] flex items-center gap-2 font-black text-xs sm:text-sm transition-all shadow-xs"
-              title="View Inquiry Bag"
+              onClick={onOpenEstimator}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-stone-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 rounded-xl transition-colors"
+              title="Tailoring Yard Estimator"
             >
-              <ShoppingBag className="w-5 h-5 text-[#0F2E22]" />
-              <span className="hidden sm:inline">Inquiry Bag</span>
-              {totalInquiryCount > 0 && (
-                <span className="bg-[#D4AF37] text-[#0F2E22] font-black text-xs px-2 py-0.5 rounded-full shadow">
-                  {totalInquiryCount}
-                </span>
-              )}
+              <Calculator className="w-4 h-4 text-amber-700" />
+              <span>Yard Estimator</span>
             </button>
 
             {/* Admin Portal Button */}
             <button
               onClick={onOpenAdmin}
-              className="px-4 py-3 rounded-2xl bg-[#0F2E22] hover:bg-[#1B4332] text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all"
+              className="p-2 sm:px-3 sm:py-2 text-xs font-semibold text-stone-700 hover:text-amber-800 bg-stone-100 hover:bg-stone-200/80 rounded-xl border border-stone-200 transition-colors flex items-center gap-1.5"
+              title="Manage Products & Upload Images"
             >
-              <Shield className="w-4 h-4 text-[#D4AF37]" />
-              <span className="hidden md:inline">Admin Portal</span>
+              <Settings className="w-4 h-4 text-stone-600" />
+              <span className="hidden sm:inline">Admin / Uploads</span>
             </button>
 
-            {/* Mobile Hamburger Toggle */}
+            {/* Cart Button */}
+            <button
+              onClick={onOpenCart}
+              className="relative flex items-center gap-2 bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white px-3.5 py-2 rounded-xl font-medium text-xs sm:text-sm shadow-sm transition-all active:scale-95"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span className="hidden sm:inline">Cart</span>
+              {cartCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-stone-900 text-amber-300 text-[11px] font-bold flex items-center justify-center -ml-0.5">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+
+            {/* Mobile Menu Toggle */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100"
-              aria-label="Toggle navigation menu"
+              className="md:hidden p-2 text-stone-600 hover:text-stone-900 rounded-lg hover:bg-stone-100"
             >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-
           </div>
-
         </div>
 
-        {/* 3 Core Main Section Navigation Tabs (Desktop) */}
-        <nav className="hidden lg:flex items-center justify-between border-t border-[#E8E2D9] py-3 text-xs sm:text-sm font-black tracking-wide">
-          <div className="flex items-center gap-2">
-            
-            <button
-              onClick={() => handleNavClick('catalog', 'all')}
-              className={`px-4 py-2 rounded-xl transition-all ${
-                activeTab === 'catalog' && activeSection === 'all'
-                  ? 'bg-[#0F2E22] text-white shadow'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              All Collections
-            </button>
-
-            {/* SECTION 1: CLOTHS */}
-            <button
-              onClick={() => handleNavClick('catalog', 'cloths')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
-                activeSection === 'cloths' && activeTab === 'catalog'
-                  ? 'bg-[#0F2E22] text-white shadow'
-                  : 'text-[#0F2E22] hover:bg-emerald-50'
-              }`}
-            >
-              <Shirt className="w-4 h-4 text-[#D4AF37]" />
-              <span>1. Cloths & Fabrics</span>
-            </button>
-
-            {/* SECTION 2: SHOES */}
-            <button
-              onClick={() => handleNavClick('catalog', 'shoes')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
-                activeSection === 'shoes' && activeTab === 'catalog'
-                  ? 'bg-amber-800 text-white shadow'
-                  : 'text-amber-900 hover:bg-amber-50'
-              }`}
-            >
-              <Footprints className="w-4 h-4 text-[#D4AF37]" />
-              <span>2. Shoes & Bags</span>
-            </button>
-
-            {/* SECTION 3: TAILORING MACHINES */}
-            <button
-              onClick={() => handleNavClick('catalog', 'tailoring-machine')}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 ${
-                activeSection === 'tailoring-machine' && activeTab === 'catalog'
-                  ? 'bg-blue-900 text-white shadow'
-                  : 'text-blue-900 hover:bg-blue-50'
-              }`}
-            >
-              <Scissors className="w-4 h-4 text-[#D4AF37]" />
-              <span>3. Tailoring Machines</span>
-            </button>
-
-          </div>
-
-          <div className="flex items-center gap-4 text-xs font-bold text-gray-600">
-            <button
-              onClick={() => handleNavClick('about')}
-              className={`hover:text-[#0F2E22] uppercase ${activeTab === 'about' ? 'text-[#0F2E22] font-black underline' : ''}`}
-            >
-              About ASV
-            </button>
-
-            <button
-              onClick={() => handleNavClick('contact')}
-              className={`hover:text-[#0F2E22] uppercase ${activeTab === 'contact' ? 'text-[#0F2E22] font-black underline' : ''}`}
-            >
-              Contact & Address
-            </button>
-          </div>
-        </nav>
-
-      </div>
-
-      {/* Mobile Menu Drawer */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden bg-[#FAF8F5] border-t-2 border-[#D4AF37] px-5 py-6 shadow-2xl space-y-4 animate-fadeIn">
-          
-          <div className="relative w-full mb-3">
+        {/* Mobile Search Input */}
+        <div className="mt-2.5 md:hidden">
+          <div className="relative w-full">
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Cloths, Shoes, Machines..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-300 text-xs font-semibold"
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Search Ankara, Lace, Atiku, Machines..."
+              className="w-full pl-9 pr-4 py-2 text-xs bg-stone-100 focus:bg-white border border-stone-200 rounded-full focus:outline-none focus:ring-2 focus:ring-amber-500/40"
             />
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          </div>
-
-          <div className="space-y-2 font-black text-sm text-[#0F2E22]">
-            
-            <button
-              onClick={() => handleNavClick('home', 'all')}
-              className="w-full text-left p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 flex items-center justify-between"
-            >
-              <span>🏠 Home Overview</span>
-            </button>
-
-            {/* 3 SECTIONS */}
-            <button
-              onClick={() => handleNavClick('catalog', 'cloths')}
-              className="w-full text-left p-3.5 rounded-xl bg-emerald-900 text-white flex items-center justify-between shadow"
-            >
-              <div className="flex items-center gap-2.5">
-                <Shirt className="w-5 h-5 text-[#D4AF37]" />
-                <span>1. Cloths & Fabrics</span>
-              </div>
-              <span className="text-xs text-[#D4AF37]">Ankara, Lace, Senator</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('catalog', 'shoes')}
-              className="w-full text-left p-3.5 rounded-xl bg-amber-900 text-white flex items-center justify-between shadow"
-            >
-              <div className="flex items-center gap-2.5">
-                <Footprints className="w-5 h-5 text-[#D4AF37]" />
-                <span>2. Shoes & Bags</span>
-              </div>
-              <span className="text-xs text-[#D4AF37]">Loafers, Heels, Bags</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('catalog', 'tailoring-machine')}
-              className="w-full text-left p-3.5 rounded-xl bg-blue-950 text-white flex items-center justify-between shadow"
-            >
-              <div className="flex items-center gap-2.5">
-                <Scissors className="w-5 h-5 text-[#D4AF37]" />
-                <span>3. Tailoring Machines</span>
-              </div>
-              <span className="text-xs text-[#D4AF37]">Industrial & Domestic</span>
-            </button>
-
-            <button
-              onClick={() => { onOpenAdmin(); setMobileMenuOpen(false); }}
-              className="w-full text-left p-3.5 rounded-xl bg-[#0F2E22] text-white flex items-center justify-between border-2 border-[#D4AF37]"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#D4AF37]" />
-                <span>Admin Portal</span>
-              </div>
-              <span className="text-xs text-[#D4AF37]">Manage Store</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('about')}
-              className="w-full text-left p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 flex items-center justify-between"
-            >
-              <span>ℹ️ About Our Store</span>
-            </button>
-
-            <button
-              onClick={() => handleNavClick('contact')}
-              className="w-full text-left p-3 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 flex items-center justify-between"
-            >
-              <span>📞 Contact & Store Address</span>
-            </button>
-
-          </div>
-
-          <div className="pt-4 border-t border-[#D8CFC4] space-y-2">
-            <a
-              href={`https://wa.me/${settings.whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3 rounded-xl bg-[#25D366] text-white font-black text-center flex items-center justify-center gap-2 shadow"
-            >
-              <MessageCircle className="w-5 h-5 fill-current" />
-              <span>ORDER ON WHATSAPP: {settings.phone}</span>
-            </a>
-
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <a
-                href={settings.facebook || 'https://www.facebook.com/share/1BeLmWzV8P/'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-2.5 px-3 rounded-xl bg-[#1877F2]/15 text-[#1877F2] font-black text-xs flex items-center justify-center gap-1.5 border border-[#1877F2]/30"
+            <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-0.5"
               >
-                <FacebookIcon className="w-4 h-4 fill-current" />
-                <span>Facebook</span>
-              </a>
-              <a
-                href={settings.tiktok || 'https://www.tiktok.com/@ayobami.samuel31'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="py-2.5 px-3 rounded-xl bg-black/10 text-[#0F2E22] font-black text-xs flex items-center justify-center gap-1.5 border border-gray-300"
-              >
-                <TikTokIcon className="w-4 h-4 fill-current" />
-                <span>TikTok</span>
-              </a>
-            </div>
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
+        </div>
 
+        {/* Category Nav Strip (Desktop & Scrollable on Mobile) */}
+        <nav className="mt-3 pt-2.5 border-t border-stone-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          {CATEGORIES.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => onSelectCategory(cat.id)}
+                className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-amber-600 text-white shadow-xs font-semibold'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100'
+                }`}
+              >
+                <span>{cat.name}</span>
+                {cat.badge && (
+                  <span className={`text-[9px] px-1.5 py-0.2 rounded-full uppercase tracking-wider font-bold ${
+                    isActive ? 'bg-amber-800 text-amber-200' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {cat.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-stone-200 bg-white px-4 py-4 space-y-3">
+          <button
+            onClick={() => {
+              onOpenEstimator();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center justify-between p-3 rounded-xl bg-amber-50 text-amber-900 text-xs font-semibold"
+          >
+            <span className="flex items-center gap-2">
+              <Calculator className="w-4 h-4 text-amber-700" />
+              Tailoring Yard Estimator
+            </span>
+            <span className="text-[10px] text-amber-700">Calculate Fabric</span>
+          </button>
+          
+          <div className="pt-2 text-xs text-stone-500 space-y-1">
+            <p className="font-semibold text-stone-800">Shop Address:</p>
+            <p>{STORE_INFO.address}</p>
+            <p className="pt-1 flex items-center gap-1 text-stone-700">
+              <Phone className="w-3.5 h-3.5 text-amber-600" />
+              <span>Call / WhatsApp: {STORE_INFO.phone}</span>
+            </p>
+          </div>
         </div>
       )}
     </header>

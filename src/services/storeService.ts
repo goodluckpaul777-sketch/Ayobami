@@ -1,0 +1,189 @@
+import { 
+  collection, 
+  doc, 
+  getDocs, 
+  setDoc, 
+  deleteDoc, 
+  serverTimestamp 
+} from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
+import { Product, OrderDetails } from '../types';
+import { INITIAL_PRODUCTS } from '../data/initialData';
+import { compressImageFile } from '../utils/imageCompressor';
+
+const LOCAL_STORAGE_KEY = 'ayobami_sam_products_v2';
+const PRODUCTS_COLLECTION = 'products';
+const ORDERS_COLLECTION = 'orders';
+
+export class StoreService {
+  /**
+   * Upload an image file. Tries Firebase Cloud Storage first to generate a permanent
+   * public CDN URL so all devices globally see the image.
+   * If Cloud Storage is restricted, falls back to optimized lightweight data URL.
+   */
+  static async uploadImage(file: File): Promise<string> {
+    try {
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storageRef = ref(storage, `cloth_products/${Date.now()}_${sanitizedName}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(snapshot.ref);
+      return downloadUrl;
+    } catch (storageError) {
+      console.warn('Firebase Storage upload skipped/fallback to optimized image:', storageError);
+      // Fallback: Compress image to lightweight data URL
+      return await compressImageFile(file, 900, 900, 0.78);
+    }
+  }
+  /**
+   * Get products from localStorage first for instant UI response,
+   * with fallback to INITIAL_PRODUCTS.
+   */
+  static getLocalProducts(): Product[] {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse local products:', e);
+    }
+    return INITIAL_PRODUCTS;
+  }
+
+  /**
+   * Save products to local storage.
+   */
+  static saveLocalProducts(products: Product[]): void {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(products));
+    } catch (e) {
+      console.warn('LocalStorage quota issue, attempting trimmed storage:', e);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(products.slice(0, 50)));
+      } catch (err) {
+        console.error('Cannot save to localStorage:', err);
+      }
+    }
+  }
+
+  /**
+   * Fetch live products from Firestore (adebisi-store-live).
+   * If Firestore has data, updates localStorage and returns them.
+   */
+  static async fetchFirestoreProducts(): Promise<{ products: Product[]; fromFirestore: boolean }> {
+    try {
+      const snap = await getDocs(collection(db, PRODUCTS_COLLECTION));
+      if (!snap.empty) {
+        const firestoreProducts: Product[] = [];
+        snap.forEach((docSnap) => {
+          const data = docSnap.data() as Product;
+          firestoreProducts.push({
+            ...data,
+            id: docSnap.id || data.id,
+          });
+        });
+        if (firestoreProducts.length > 0) {
+          this.saveLocalProducts(firestoreProducts);
+          return { products: firestoreProducts, fromFirestore: true };
+        }
+      }
+    } catch (err) {
+      console.warn('Firestore fetch failed (using local catalog):', err);
+    }
+    return { products: this.getLocalProducts(), fromFirestore: false };
+  }
+
+  /**
+   * Save or update a product in both local storage and Firestore.
+   */
+  static async saveProduct(product: Product): Promise<Product[]> {
+    const current = this.getLocalProducts();
+    const index = current.findIndex(p => p.id === product.id);
+    let updated: Product[];
+    if (index >= 0) {
+      updated = [...current];
+      updated[index] = product;
+    } else {
+      updated = [product, ...current];
+    }
+    this.saveLocalProducts(updated);
+
+    // Sync to Firestore
+    try {
+      await setDoc(doc(db, PRODUCTS_COLLECTION, product.id), {
+        ...product,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (err) {
+      console.warn('Firestore save single product failed:', err);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Delete a product.
+   */
+  static async deleteProduct(productId: string): Promise<Product[]> {
+    const current = this.getLocalProducts();
+    const updated = current.filter(p => p.id !== productId);
+    this.saveLocalProducts(updated);
+
+    try {
+      await deleteDoc(doc(db, PRODUCTS_COLLECTION, productId));
+    } catch (err) {
+      console.warn('Firestore delete product failed:', err);
+    }
+
+    return updated;
+  }
+
+  /**
+   * Sync all local products to Firestore.
+   */
+  static async syncAllToFirestore(products: Product[]): Promise<{ count: number; success: boolean }> {
+    let successCount = 0;
+    for (const prod of products) {
+      try {
+        await setDoc(doc(db, PRODUCTS_COLLECTION, prod.id), {
+          ...prod,
+          syncedAt: serverTimestamp(),
+        }, { merge: true });
+        successCount++;
+      } catch (e) {
+        console.warn(`Failed to sync product ${prod.id} to Firestore:`, e);
+      }
+    }
+    return { count: successCount, success: successCount > 0 };
+  }
+
+  /**
+   * Reset local catalog back to standard INITIAL_PRODUCTS.
+   */
+  static resetToDefault(): Product[] {
+    this.saveLocalProducts(INITIAL_PRODUCTS);
+    return INITIAL_PRODUCTS;
+  }
+
+  /**
+   * Record customer order/inquiry in Firestore.
+   */
+  static async recordOrder(order: OrderDetails): Promise<boolean> {
+    try {
+      const orderId = `ord-${Date.now()}`;
+      await setDoc(doc(db, ORDERS_COLLECTION, orderId), {
+        ...order,
+        id: orderId,
+        createdAt: serverTimestamp(),
+      });
+      return true;
+    } catch (err) {
+      console.warn('Firestore order recording error:', err);
+      return false;
+    }
+  }
+}

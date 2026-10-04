@@ -1,213 +1,155 @@
 import React from 'react';
-import { StoreSettings, MainSectionType } from '../types';
-import { Phone, MessageCircle, MapPin, Clock, ArrowUp, ExternalLink, Shirt, Footprints, Scissors, Shield } from 'lucide-react';
-import { FacebookIcon, TikTokIcon } from './SocialIcons';
-import { OFFICIAL_LOGO_URL } from '../data/initialData';
+import { 
+  Sparkles, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  MessageCircle, 
+  ShieldCheck, 
+  Truck, 
+  Heart,
+  Store
+} from 'lucide-react';
+import { STORE_INFO, CATEGORIES } from '../data/initialData';
+import { CategoryId } from '../types';
 
 interface FooterProps {
-  settings: StoreSettings;
-  onSelectSection: (section: MainSectionType) => void;
-  onNavigate: (tab: string) => void;
-  onOpenYardGuide: () => void;
+  onSelectCategory: (cat: CategoryId) => void;
+  onOpenEstimator: () => void;
   onOpenAdmin: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  settings,
-  onSelectSection,
-  onNavigate,
-  onOpenYardGuide,
+  onSelectCategory,
+  onOpenEstimator,
   onOpenAdmin,
 }) => {
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const facebookUrl = settings.facebook || 'https://www.facebook.com/share/1BeLmWzV8P/';
-  const tiktokUrl = settings.tiktok || 'https://www.tiktok.com/@ayobami.samuel31';
-  const logoSrc = settings.logoUrl || OFFICIAL_LOGO_URL;
-
   return (
-    <footer className="bg-[#0F2E22] text-[#E0D6C8] pt-16 pb-12 border-t-4 border-[#D4AF37]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 pb-12 border-b border-[#245842]">
+    <footer className="bg-stone-950 text-white pt-14 pb-8 px-4 sm:px-6 border-t border-amber-900/40">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 pb-12 border-b border-stone-800">
           
-          {/* Brand & Official Logo Column (Open & Bold) */}
-          <div className="lg:col-span-5 space-y-5">
-            <div className="flex items-center gap-4">
-              {logoSrc && (
-                <img
-                  src={logoSrc}
-                  alt="Ayobami SAM Ventures"
-                  className="w-20 h-20 sm:w-24 sm:h-24 object-contain drop-shadow-xl hover:scale-105 transition-transform duration-300"
-                />
-              )}
+          {/* Brand Col */}
+          <div className="lg:col-span-4 space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-600 flex items-center justify-center text-white shadow-md">
+                <Sparkles className="w-5 h-5 text-amber-200" />
+              </div>
               <div>
-                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  {settings.storeName}
-                </h3>
-                <p className="text-xs sm:text-sm font-black text-[#D4AF37] uppercase tracking-wider mt-1 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#D4AF37]"></span>
-                  <span>Cloths • Shoes • Tailoring Machines</span>
-                </p>
+                <div className="text-lg font-bold font-serif text-white tracking-tight">
+                  {STORE_INFO.name}
+                </div>
+                <div className="text-xs text-amber-400 font-medium">
+                  {STORE_INFO.tagline}
+                </div>
               </div>
             </div>
 
-            <p className="text-xs sm:text-sm text-[#C4B7A5] font-medium leading-relaxed max-w-md">
-              Your premier retail and wholesale store based at 37/39 Balogun West, Molake House, Lagos. Delivering guaranteed quality fabrics, handcrafted shoes, and industrial tailoring machines across Nigeria and internationally.
+            <p className="text-xs text-stone-400 leading-relaxed max-w-sm">
+              Authentic Nigerian and imported textile merchant located in Balogun Market, Lagos Island. Wholesale &amp; retail supply of Hollandais Ankara, French Lace, Guinea Brocade, and industrial sewing machines with reliable nationwide waybill.
             </p>
 
-            {/* Direct Contact Links */}
-            <div className="pt-2 flex flex-col gap-2.5 text-xs font-bold text-white">
-              <a
-                href={`https://wa.me/${settings.whatsapp}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 text-[#52B788] hover:text-white"
-              >
-                <MessageCircle className="w-4 h-4 fill-current" />
-                <span>WhatsApp: {settings.phone}</span>
-              </a>
-              <div className="inline-flex flex-wrap items-center gap-2 text-[#D4AF37]">
-                <Phone className="w-4 h-4" />
-                <a href="tel:08033810865" className="hover:text-white">08033810865</a>
-                <span>/</span>
-                <a href="tel:09150996348" className="hover:text-white">09150996348</a>
-              </div>
-            </div>
-
-            {/* Social Media Channels */}
-            <div className="pt-3">
-              <span className="text-[11px] font-black uppercase tracking-widest text-[#D4AF37] block mb-2.5">
-                Official Social Media Handles:
+            <div className="pt-2 flex items-center gap-3 text-xs text-stone-300">
+              <span className="flex items-center gap-1.5 text-amber-400">
+                <Store className="w-4 h-4" />
+                <span>Balogun Central Plaza</span>
               </span>
-              <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href={facebookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#1877F2]/20 hover:bg-[#1877F2] text-white border border-[#1877F2]/40 transition-all font-bold text-xs"
-                >
-                  <FacebookIcon className="w-4 h-4 text-[#1877F2] hover:text-white" />
-                  <span>Facebook Profile</span>
-                  <ExternalLink className="w-3 h-3 opacity-70" />
-                </a>
-
-                <a
-                  href={tiktokUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-black/40 hover:bg-black text-white border border-white/20 transition-all font-bold text-xs"
-                >
-                  <TikTokIcon className="w-4 h-4 text-[#25F4EE]" />
-                  <span>TikTok (@ayobami.samuel31)</span>
-                  <ExternalLink className="w-3 h-3 opacity-70" />
-                </a>
-              </div>
-            </div>
-
-          </div>
-
-          {/* 3 Core Departments Navigation */}
-          <div className="lg:col-span-4 space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-widest border-b border-[#245842] pb-2 text-[#D4AF37]">
-              Our 3 Main Departments
-            </h4>
-            <div className="space-y-3">
-              
-              <button
-                onClick={() => {
-                  onSelectSection('cloths');
-                  onNavigate('catalog');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="w-full text-left p-3 rounded-xl bg-[#143D2E] hover:bg-[#1B4E3B] border border-[#245842] transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Shirt className="w-4 h-4 text-[#D4AF37]" />
-                  <span className="font-black text-white text-xs sm:text-sm">1. Cloths & Fabrics</span>
-                </div>
-                <span className="text-[11px] text-gray-400">Ankara, Lace, Senator</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onSelectSection('shoes');
-                  onNavigate('catalog');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="w-full text-left p-3 rounded-xl bg-[#143D2E] hover:bg-[#1B4E3B] border border-[#245842] transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Footprints className="w-4 h-4 text-[#D4AF37]" />
-                  <span className="font-black text-white text-xs sm:text-sm">2. Shoes & Bags</span>
-                </div>
-                <span className="text-[11px] text-gray-400">Sets, Loafers, Heels, Bags</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onSelectSection('tailoring-machine');
-                  onNavigate('catalog');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="w-full text-left p-3 rounded-xl bg-[#143D2E] hover:bg-[#1B4E3B] border border-[#245842] transition-colors flex items-center justify-between"
-              >
-                <div className="flex items-center gap-2.5">
-                  <Scissors className="w-4 h-4 text-[#D4AF37]" />
-                  <span className="font-black text-white text-xs sm:text-sm">3. Tailoring Machines</span>
-                </div>
-                <span className="text-[11px] text-gray-400">Industrial & Butterfly</span>
-              </button>
-
+              <span>•</span>
+              <span className="text-emerald-400">RC Registered</span>
             </div>
           </div>
 
-          {/* Quick Links & Location */}
-          <div className="lg:col-span-3 space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-widest border-b border-[#245842] pb-2 text-[#D4AF37]">
-              Store & Admin Portal
+          {/* Quick Categories */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="font-serif font-bold text-sm text-amber-400 uppercase tracking-wider">
+              Product Categories
             </h4>
-            <div className="space-y-2.5 text-xs text-[#C4B7A5]">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                <span>{settings.address}</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Clock className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
-                <span>{settings.openingHours}</span>
-              </div>
-            </div>
+            <ul className="space-y-2 text-xs text-stone-300">
+              {CATEGORIES.filter(c => c.id !== 'all').map((cat) => (
+                <li key={cat.id}>
+                  <button
+                    onClick={() => onSelectCategory(cat.id)}
+                    className="hover:text-amber-300 transition-colors text-left"
+                  >
+                    {cat.name}
+                  </button>
+                </li>
+              ))}
+              <li>
+                <button
+                  onClick={onOpenEstimator}
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition-colors"
+                >
+                  ✂ Tailoring Yard Estimator
+                </button>
+              </li>
+            </ul>
+          </div>
 
-            <div className="pt-3 space-y-2">
+          {/* Store Location & Contacts */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="font-serif font-bold text-sm text-amber-400 uppercase tracking-wider">
+              Balogun Market Store
+            </h4>
+            <div className="space-y-2 text-xs text-stone-300">
+              <p className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                <span>{STORE_INFO.address}</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>{STORE_INFO.phone}</span>
+              </p>
+              <p className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+                <a
+                  href={`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-white"
+                >
+                  WhatsApp Orders: {STORE_INFO.phone}
+                </a>
+              </p>
+              <p className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>{STORE_INFO.email}</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Business & Admin */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="font-serif font-bold text-sm text-amber-400 uppercase tracking-wider">
+              Merchant Admin
+            </h4>
+            <div className="space-y-2 text-xs text-stone-300">
+              <p className="text-[11px] text-stone-400 leading-normal">
+                Upload product photos, manage inventory, and sync database.
+              </p>
               <button
                 onClick={onOpenAdmin}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#D4AF37] hover:bg-[#c49b29] text-[#0F2E22] font-black text-xs flex items-center justify-center gap-2 shadow"
+                className="w-full py-2 px-3 rounded-xl bg-stone-800 hover:bg-stone-700 text-amber-300 font-semibold text-xs border border-stone-700 transition-colors text-left flex items-center justify-between"
               >
-                <Shield className="w-4 h-4" />
-                <span>Store Owner Admin Portal</span>
+                <span>Admin &amp; Uploads</span>
+                <span>→</span>
               </button>
             </div>
           </div>
 
         </div>
 
-        {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#A89A88]">
-          <p className="font-medium text-center sm:text-left">
-            © {new Date().getFullYear()} {settings.storeName}. All Rights Reserved. Lagos, Nigeria.
-          </p>
-
-          <button
-            onClick={scrollToTop}
-            className="flex items-center gap-2 text-white hover:text-[#D4AF37] font-black bg-[#143D2E] px-4 py-2 rounded-xl transition-colors border border-[#245842]"
-          >
-            <span>Back to top</span>
-            <ArrowUp className="w-4 h-4" />
-          </button>
+        {/* Bottom Sub-footer */}
+        <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-stone-500">
+          <p>© {new Date().getFullYear()} Ayobami SAM Venture. All rights reserved.</p>
+          <div className="flex items-center gap-4 text-[11px]">
+            <span>100% Secure Payments</span>
+            <span>•</span>
+            <span>Nationwide Waybill</span>
+            <span>•</span>
+            <span>Balogun Market Lagos</span>
+          </div>
         </div>
-
       </div>
     </footer>
   );

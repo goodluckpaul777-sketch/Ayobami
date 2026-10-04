@@ -1,114 +1,110 @@
 import React from 'react';
-import { MainSectionType } from '../types';
-import { MAIN_SECTIONS } from '../data/initialData';
-import { Shirt, Footprints, Scissors, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { CATEGORIES } from '../data/initialData';
+import { CategoryId } from '../types';
+import { 
+  Palette, 
+  Crown, 
+  Shirt, 
+  Wrench, 
+  ShoppingBag, 
+  Sparkles,
+  ArrowRight
+} from 'lucide-react';
 
 interface CategoryGridProps {
-  selectedSection: 'all' | MainSectionType;
-  onSelectSection: (section: MainSectionType) => void;
+  selectedCategory: CategoryId;
+  onSelectCategory: (cat: CategoryId) => void;
+  productCounts: Record<string, number>;
 }
 
 export const CategoryGrid: React.FC<CategoryGridProps> = ({
-  selectedSection,
-  onSelectSection,
+  selectedCategory,
+  onSelectCategory,
+  productCounts,
 }) => {
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Palette':
+        return <Palette className="w-5 h-5 text-amber-600" />;
+      case 'Crown':
+        return <Crown className="w-5 h-5 text-amber-600" />;
+      case 'Shirt':
+        return <Shirt className="w-5 h-5 text-amber-600" />;
+      case 'Wrench':
+        return <Wrench className="w-5 h-5 text-amber-600" />;
+      case 'ShoppingBag':
+        return <ShoppingBag className="w-5 h-5 text-amber-600" />;
+      default:
+        return <Sparkles className="w-5 h-5 text-amber-600" />;
+    }
+  };
+
   return (
-    <section className="py-16 sm:py-20 bg-white border-b border-[#E8E2D9]" id="departments-section">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Section Title */}
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16 space-y-3">
-          <span className="text-xs font-black uppercase tracking-widest text-[#0F2E22] bg-[#FAF8F5] border border-[#D4AF37]/50 px-4 py-1.5 rounded-full">
-            OUR THREE CORE SPECIALTIES
+    <section className="py-8 px-4 sm:px-6 max-w-7xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-6">
+        <div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 bg-amber-100/60 px-2.5 py-0.5 rounded-full">
+            Balogun Market Categories
           </span>
-          <h2 className="text-xl sm:text-3xl lg:text-5xl font-black text-[#0F2E22] tracking-tight">
-            EXPLORE BY DEPARTMENT
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-900 mt-1">
+            Browse by Department
           </h2>
-          <p className="text-xs sm:text-base text-gray-600 font-medium">
-            Whether you need authentic Nigerian fabrics, luxury handcrafted shoes, or commercial sewing machines, Ayobami SAM Ventures has you covered.
-          </p>
         </div>
+        <p className="text-xs text-stone-500 mt-1 sm:mt-0">
+          Wholesale bundles and retail cuts available with custom delivery
+        </p>
+      </div>
 
-        {/* 3 Main Section Showcases (Spacious, Bold Layout) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10">
-          {MAIN_SECTIONS.map((sec, idx) => {
-            const isCloths = sec.id === 'cloths';
-            const isShoes = sec.id === 'shoes';
-            const isMachine = sec.id === 'tailoring-machine';
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        {CATEGORIES.map((cat) => {
+          const isSelected = selectedCategory === cat.id;
+          const count = cat.id === 'all' 
+            ? Object.values(productCounts).reduce((a, b) => a + b, 0)
+            : (productCounts[cat.id] || 0);
 
-            return (
-              <div
-                key={sec.id}
-                onClick={() => onSelectSection(sec.id)}
-                className={`group rounded-3xl overflow-hidden border-2 transition-all duration-300 flex flex-col justify-between cursor-pointer bg-white shadow-md hover:shadow-2xl transform hover:-translate-y-2 ${
-                  selectedSection === sec.id
-                    ? 'border-[#D4AF37] ring-4 ring-[#D4AF37]/20'
-                    : 'border-[#E8E2D9] hover:border-[#D4AF37]'
-                }`}
-              >
-                {/* Visual Header with Image */}
-                <div className="relative aspect-16/10 overflow-hidden bg-gray-100">
-                  <img
-                    src={sec.image || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}
-                    alt={sec.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-6">
-                    <div className="text-white space-y-1">
-                      <span className="text-[11px] font-black uppercase tracking-widest text-[#D4AF37]">
-                        DEPARTMENT 0{idx + 1}
-                      </span>
-                      <h3 className="text-2xl font-black text-white">
-                        {sec.name}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <div className="absolute top-4 right-4 w-12 h-12 rounded-2xl bg-white/90 backdrop-blur-md flex items-center justify-center shadow-lg">
-                    {isCloths && <Shirt className="w-6 h-6 text-[#0F2E22]" />}
-                    {isShoes && <Footprints className="w-6 h-6 text-amber-800" />}
-                    {isMachine && <Scissors className="w-6 h-6 text-blue-900" />}
-                  </div>
+          return (
+            <button
+              key={cat.id}
+              onClick={() => onSelectCategory(cat.id)}
+              className={`text-left p-3.5 sm:p-4 rounded-2xl border transition-all flex flex-col justify-between group relative overflow-hidden ${
+                isSelected
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-md scale-[1.02]'
+                  : 'bg-white hover:bg-stone-50 text-stone-900 border-stone-200/90 hover:border-amber-300'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className={`p-2 rounded-xl transition-colors ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-amber-50 group-hover:bg-amber-100'
+                }`}>
+                  {getIcon(cat.iconName)}
                 </div>
-
-                {/* Body Content (Spacious & Crisp) */}
-                <div className="p-6 sm:p-8 space-y-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
-                      {sec.description}
-                    </p>
-
-                    {/* Features List */}
-                    <div className="space-y-2 pt-2 border-t border-gray-100">
-                      <span className="text-[10.5px] font-black uppercase text-gray-400 block tracking-wider">
-                        Key Offerings:
-                      </span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {sec.features.map((feat, fIdx) => (
-                          <div key={fIdx} className="flex items-center gap-1.5 text-xs font-bold text-[#0F2E22]">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-[#D4AF37] shrink-0" />
-                            <span className="truncate">{feat}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Link */}
-                  <div className="pt-4 border-t border-[#E8E2D9] flex items-center justify-between font-black text-xs sm:text-sm text-[#0F2E22]">
-                    <span>Browse {sec.name}</span>
-                    <div className="w-8 h-8 rounded-full bg-[#FAF8F5] border border-[#D4AF37]/50 flex items-center justify-center group-hover:bg-[#0F2E22] group-hover:text-white transition-colors">
-                      <ArrowRight className="w-4 h-4 text-[#D4AF37] group-hover:text-white" />
-                    </div>
-                  </div>
-
-                </div>
-
+                {cat.badge && (
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
+                    isSelected ? 'bg-amber-800 text-amber-200' : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {cat.badge}
+                  </span>
+                )}
               </div>
-            );
-          })}
-        </div>
 
+              <div>
+                <h3 className={`font-semibold text-xs sm:text-sm line-clamp-1 ${
+                  isSelected ? 'text-white' : 'text-stone-900 group-hover:text-amber-800'
+                }`}>
+                  {cat.name}
+                </h3>
+                <div className={`text-[11px] mt-0.5 flex items-center justify-between ${
+                  isSelected ? 'text-amber-100' : 'text-stone-500'
+                }`}>
+                  <span>{count} {count === 1 ? 'item' : 'items'}</span>
+                  <ArrowRight className={`w-3 h-3 transition-transform group-hover:translate-x-0.5 ${
+                    isSelected ? 'text-white' : 'text-stone-400 group-hover:text-amber-600'
+                  }`} />
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

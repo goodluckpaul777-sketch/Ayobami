@@ -1,272 +1,207 @@
-import React, { useState } from 'react';
-import { InquiryItem, StoreSettings } from '../types';
-import { X, Trash2, Plus, Minus, MessageCircle, ArrowRight, CheckCircle2, ShoppingBag, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { 
+  X, 
+  Trash2, 
+  ShoppingBag, 
+  ArrowRight, 
+  MessageCircle, 
+  ShieldCheck,
+  Truck
+} from 'lucide-react';
+import { CartItem } from '../types';
+import { formatNaira } from '../utils/formatters';
+import { STORE_INFO } from '../data/initialData';
 
 interface CartDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  cart: InquiryItem[];
-  settings: StoreSettings;
-  onUpdateQuantity: (productId: string, newQty: number) => void;
-  onRemoveItem: (productId: string) => void;
-  onClearCart: () => void;
-  onSubmitInquiry: (customerName: string, phone: string, state: string, city: string, notes: string) => void;
+  items: CartItem[];
+  onUpdateQuantity: (productId: string, quantity: number, color?: string) => void;
+  onRemoveItem: (productId: string, color?: string) => void;
+  onProceedToCheckout: () => void;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
   isOpen,
   onClose,
-  cart,
-  settings,
+  items,
   onUpdateQuantity,
   onRemoveItem,
-  onClearCart,
-  onSubmitInquiry,
+  onProceedToCheckout,
 }) => {
   if (!isOpen) return null;
 
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerState, setCustomerState] = useState('Lagos');
-  const [customerCity, setCustomerCity] = useState('');
-  const [customerNotes, setCustomerNotes] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const subtotal = items.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
 
-  const totalItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const handleWhatsAppCheckout = () => {
+    if (items.length === 0) return;
+    const itemList = items
+      .map(
+        (it, idx) =>
+          `${idx + 1}. *${it.product.name}* (Qty: ${it.quantity} ${it.product.unit}) ${it.selectedColor ? `[Color: ${it.selectedColor}]` : ''} — ${formatNaira(it.product.price * it.quantity)}`
+      )
+      .join('\n');
 
-  const handleSendWhatsAppInquiry = () => {
-    if (cart.length === 0) return;
+    const message = encodeURI(
+      `Hello Ayobami SAM Venture, I want to place this order from your website:\n\n${itemList}\n\n*SUBTOTAL:* ${formatNaira(
+        subtotal
+      )}\nPlease share bank details and advise on delivery dispatch.`
+    );
 
-    let itemsListText = cart.map((item, idx) => {
-      const unit = item.product.unitLabel || (item.product.mainSection === 'cloths' ? 'yard' : item.product.mainSection === 'shoes' ? 'pair' : 'machine');
-      const section = item.product.mainSection === 'cloths' ? 'Cloths' : item.product.mainSection === 'shoes' ? 'Shoes' : 'Tailoring Machine';
-      const photoUrl = item.product.image && !item.product.image.startsWith('data:image')
-        ? (item.product.image.startsWith('http') ? item.product.image : `${window.location.origin}${item.product.image}`)
-        : '';
-      const photoLine = photoUrl ? `\n   - 📷 Photo: ${photoUrl}` : '';
-
-      return `${idx + 1}. *${item.product.name}*\n   - Section: ${section} (${item.product.category})\n   - Quantity: ${item.quantity} ${unit}${item.quantity > 1 ? 's' : ''}\n   - Variation: ${item.selectedColor || 'Standard'}${photoLine}`;
-    }).join('\n\n');
-
-    let customerInfoText = customerName ? `\n\n👤 *Customer Name:* ${customerName}\n📞 *Phone:* ${customerPhone}\n📍 *Delivery Location:* ${customerCity}, ${customerState} State` : '';
-
-    const message = `Hello ${settings.storeName}, I would like to request price quotations and availability for the following items from your catalogue:\n\n${itemsListText}${customerInfoText}\n\nPlease reply with the prices, availability, and delivery options. Thank you!`;
-
-    const url = `https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-  };
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customerName.trim() || !customerPhone.trim()) {
-      alert('Please enter your name and phone number');
-      return;
-    }
-
-    onSubmitInquiry(customerName, customerPhone, customerState, customerCity, customerNotes);
-    setIsSubmitted(true);
-    setTimeout(() => {
-      setIsSubmitted(false);
-      onClearCart();
-      onClose();
-    }, 3000);
+    window.open(`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}?text=${message}`, '_blank');
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/75 backdrop-blur-sm animate-fadeIn">
-      <div className="absolute inset-0" onClick={onClose} />
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Backdrop */}
+      <div 
+        onClick={onClose}
+        className="absolute inset-0 bg-stone-950/60 backdrop-blur-xs transition-opacity"
+      />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md sm:max-w-lg bg-white shadow-2xl border-l-2 border-[#D4AF37] flex flex-col justify-between">
+        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col justify-between">
           
           {/* Header */}
-          <div className="p-6 bg-[#0F2E22] text-white flex items-center justify-between border-b border-[#D4AF37]">
-            <div className="flex items-center gap-3">
-              <ShoppingBag className="w-6 h-6 text-[#D4AF37]" />
-              <div>
-                <h2 className="text-lg font-black tracking-tight text-white">
-                  PRODUCT INQUIRY BAG
-                </h2>
-                <p className="text-xs text-emerald-300 font-semibold">
-                  {totalItemsCount} item{totalItemsCount === 1 ? '' : 's'} selected for pricing quotation
-                </p>
-              </div>
+          <div className="p-4 sm:p-5 border-b border-stone-200 flex items-center justify-between bg-stone-50">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-amber-700" />
+              <h2 className="font-serif font-bold text-base sm:text-lg text-stone-900">
+                Your Shopping Cart
+              </h2>
+              <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-900">
+                {items.length} {items.length === 1 ? 'item' : 'items'}
+              </span>
             </div>
-
             <button
               onClick={onClose}
-              className="p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+              className="p-2 rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-200/60 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Body List */}
-          <div className="p-6 overflow-y-auto flex-1 space-y-6">
-            
-            {isSubmitted ? (
-              <div className="bg-emerald-50 border-2 border-emerald-600 rounded-2xl p-6 text-center space-y-3">
-                <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                <h3 className="text-lg font-black text-emerald-950">Inquiry Sent Successfully!</h3>
-                <p className="text-xs text-emerald-800 font-medium">
-                  Our sales team at Ayobami SAM Ventures will contact you via WhatsApp/Phone shortly.
-                </p>
-              </div>
-            ) : cart.length === 0 ? (
-              <div className="text-center py-16 space-y-4">
-                <div className="w-16 h-16 rounded-3xl bg-[#FAF8F5] border border-gray-200 flex items-center justify-center mx-auto text-gray-400">
+          {/* Cart Item List */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 divide-y divide-stone-100">
+            {items.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
+                <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
                   <ShoppingBag className="w-8 h-8" />
                 </div>
-                <h3 className="text-base font-black text-gray-800">Your Inquiry Bag is Empty</h3>
-                <p className="text-xs text-gray-500 max-w-xs mx-auto">
-                  Browse our Cloths, Shoes, and Tailoring Machine departments and add items you want to inquire about.
+                <h3 className="font-serif font-bold text-stone-900 text-base">
+                  Your cart is empty
+                </h3>
+                <p className="text-xs text-stone-500 max-w-xs">
+                  Discover authentic Hollandais Ankara, luxury Lace, and industrial sewing machines from Balogun Market.
                 </p>
                 <button
                   onClick={onClose}
-                  className="px-6 py-3 rounded-xl bg-[#0F2E22] text-white text-xs font-black"
+                  className="mt-2 px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-all"
                 >
-                  Start Exploring
+                  Start Shopping
                 </button>
               </div>
             ) : (
-              <>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs font-bold text-gray-500">
-                    <span>SELECTED ITEMS ({cart.length})</span>
-                    <button
-                      onClick={onClearCart}
-                      className="text-red-600 hover:underline text-[11px]"
-                    >
-                      Clear All
-                    </button>
-                  </div>
+              items.map((item, idx) => {
+                const img = item.product.images?.[0] || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=400&q=80';
+                return (
+                  <div key={`${item.product.id}-${item.selectedColor || idx}`} className="py-4 flex gap-3 sm:gap-4">
+                    <img
+                      src={img}
+                      alt={item.product.name}
+                      className="w-20 h-20 sm:w-22 sm:h-22 rounded-xl object-cover border border-stone-200 shrink-0 bg-stone-100"
+                    />
 
-                  {cart.map((item) => {
-                    const unit = item.product.unitLabel || (item.product.mainSection === 'cloths' ? 'yard' : item.product.mainSection === 'shoes' ? 'pair' : 'machine');
-                    return (
-                      <div key={item.product.id} className="p-3.5 bg-[#FAF8F5] rounded-2xl border border-[#E8E2D9] flex items-center gap-3">
-                        <img
-                          src={item.product.image || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='}
-                          alt={item.product.name}
-                          className="w-14 h-14 rounded-xl object-cover border border-gray-200 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[10px] font-black uppercase text-[#D4AF37] block">
-                            {item.product.category}
-                          </span>
-                          <h4 className="text-xs font-black text-[#0F2E22] truncate">
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="font-semibold text-xs sm:text-sm text-stone-900 line-clamp-1">
                             {item.product.name}
                           </h4>
-                          <span className="text-[11px] text-gray-500 block">
-                            Variation: {item.selectedColor || 'Standard'}
-                          </span>
+                          <button
+                            onClick={() => onRemoveItem(item.product.id, item.selectedColor)}
+                            className="text-stone-400 hover:text-red-600 p-1 transition-colors"
+                            title="Remove"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
 
-                        {/* Qty controls */}
-                        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-gray-200">
+                        {item.selectedColor && (
+                          <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+                            Color: {item.selectedColor}
+                          </div>
+                        )}
+                        <div className="text-[11px] text-stone-500">
+                          {formatNaira(item.product.price)} / {item.product.unit}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2 pt-1">
+                        <div className="flex items-center border border-stone-200 rounded-lg overflow-hidden bg-stone-50 text-xs">
                           <button
-                            onClick={() => onUpdateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
-                            className="w-6 h-6 rounded bg-gray-100 font-black text-xs flex items-center justify-center text-gray-700"
+                            onClick={() => onUpdateQuantity(item.product.id, item.quantity - 1, item.selectedColor)}
+                            className="px-2.5 py-1 text-stone-600 hover:bg-stone-200"
                           >
                             -
                           </button>
-                          <span className="w-6 text-center font-bold text-xs text-[#0F2E22]">
+                          <span className="px-3 py-1 font-semibold text-stone-900">
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1)}
-                            className="w-6 h-6 rounded bg-gray-100 font-black text-xs flex items-center justify-center text-gray-700"
+                            onClick={() => onUpdateQuantity(item.product.id, item.quantity + 1, item.selectedColor)}
+                            className="px-2.5 py-1 text-stone-600 hover:bg-stone-200"
                           >
                             +
                           </button>
                         </div>
 
-                        <button
-                          onClick={() => onRemoveItem(item.product.id)}
-                          className="p-1 text-gray-400 hover:text-red-600"
-                          title="Remove"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="font-serif font-bold text-xs sm:text-sm text-stone-900">
+                          {formatNaira(item.product.price * item.quantity)}
+                        </div>
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Optional Customer Contact Form */}
-                <form onSubmit={handleFormSubmit} className="pt-4 border-t border-[#E8E2D9] space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-[#0F2E22] block">
-                    Your Contact Information (Optional)
-                  </span>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Your Full Name *"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold"
-                    />
-                    <input
-                      type="tel"
-                      placeholder="Phone / WhatsApp *"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold"
-                    />
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={customerState}
-                      onChange={(e) => setCustomerState(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold"
-                    >
-                      {['Lagos', 'Abuja (FCT)', 'Ogun', 'Oyo', 'Rivers', 'Anambra', 'Enugu', 'Kano', 'Kaduna', 'Edo', 'Delta', 'Other States', 'International / Diaspora'].map((st) => (
-                        <option key={st} value={st}>{st}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="City / Area"
-                      value={customerCity}
-                      onChange={(e) => setCustomerCity(e.target.value)}
-                      className="px-3 py-2 rounded-xl border border-gray-300 text-xs font-semibold"
-                    />
-                  </div>
-
-                  <textarea
-                    rows={2}
-                    placeholder="Any special size/yardage notes or questions..."
-                    value={customerNotes}
-                    onChange={(e) => setCustomerNotes(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-gray-300 text-xs"
-                  />
-                </form>
-              </>
+                );
+              })
             )}
-
           </div>
 
-          {/* Bottom Actions */}
-          {cart.length > 0 && !isSubmitted && (
-            <div className="p-6 bg-[#FAF8F5] border-t border-[#E8E2D9] space-y-3">
+          {/* Footer Summary */}
+          {items.length > 0 && (
+            <div className="p-4 sm:p-5 border-t border-stone-200 bg-stone-50 space-y-3">
+              <div className="flex items-baseline justify-between text-stone-900">
+                <span className="font-semibold text-xs sm:text-sm">Subtotal:</span>
+                <span className="font-serif font-bold text-lg sm:text-xl text-stone-950">
+                  {formatNaira(subtotal)}
+                </span>
+              </div>
+
+              <div className="text-[11px] text-stone-500 flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <Truck className="w-3.5 h-3.5 text-amber-600" />
+                  Delivery &amp; Waybill calculated at checkout
+                </span>
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Verified
+                </span>
+              </div>
+
               <button
-                type="button"
-                onClick={handleSendWhatsAppInquiry}
-                className="w-full py-4 px-6 rounded-2xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-black text-sm sm:text-base flex items-center justify-center gap-2.5 shadow-xl hover:shadow-2xl transition-all"
+                onClick={onProceedToCheckout}
+                className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <MessageCircle className="w-5 h-5 fill-current" />
-                <span>SEND INQUIRY LIST ON WHATSAPP</span>
+                <span>Proceed to Checkout</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
 
               <button
-                type="button"
-                onClick={handleFormSubmit}
-                className="w-full py-3 px-4 rounded-xl bg-[#0F2E22] hover:bg-[#1B4332] text-white font-bold text-xs flex items-center justify-center gap-2"
+                onClick={handleWhatsAppCheckout}
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
               >
-                <span>Submit Inquiry to Store Admin</span>
-                <ArrowRight className="w-4 h-4 text-[#D4AF37]" />
+                <MessageCircle className="w-4 h-4" />
+                <span>Instant WhatsApp Checkout</span>
               </button>
             </div>
           )}

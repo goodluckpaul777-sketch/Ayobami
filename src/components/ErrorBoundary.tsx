@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { RefreshCw, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -21,44 +21,29 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error caught by ErrorBoundary:', error, errorInfo);
-    // If it was a storage quota error, clear stale large keys from localStorage
-    if (error.message?.includes('QuotaExceededError') || error.name === 'QuotaExceededError') {
-      try {
-        localStorage.clear();
-      } catch {
-        // ignore
-      }
-    }
+    console.error('Uncaught error:', error, errorInfo);
   }
-
-  private handleReset = () => {
-    try {
-      localStorage.clear();
-    } catch {
-      // ignore
-    }
-    window.location.reload();
-  };
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center border-2 border-[#D4AF37] shadow-2xl space-y-4">
-            <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-8 h-8" />
+        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 shadow-xl border border-stone-200 text-center space-y-4">
+            <div className="w-14 h-14 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto">
+              <AlertTriangle className="w-7 h-7" />
             </div>
-            <h2 className="text-xl font-black text-[#0F2E22]">Ayobami SAM Ventures</h2>
-            <p className="text-xs text-gray-600 font-medium">
-              The application encountered a temporary display issue, likely due to browser storage limits.
+            <h2 className="text-xl font-serif font-bold text-stone-900">
+              Something went wrong
+            </h2>
+            <p className="text-xs text-stone-500">
+              An unexpected display issue occurred. You can reload the page to continue shopping.
             </p>
             <button
-              onClick={this.handleReset}
-              className="w-full py-3 rounded-xl bg-[#0F2E22] hover:bg-[#1B4332] text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2 mx-auto"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Reload Application & Clear Local Cache</span>
+              <span>Reload Application</span>
             </button>
           </div>
         </div>

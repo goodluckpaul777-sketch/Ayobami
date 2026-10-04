@@ -1,12 +1,9 @@
 {
-  "projectId": "ferrous-alcove-xghtt",
-  "appId": "1:52216001947:web:91637a45940c14f4195d3e",
-  "apiKey": "AIzaSyBfstXFNoGmWpVZm49rTtbH0xoo27F2e-E",
-  "authDomain": "ferrous-alcove-xghtt.firebaseapp.com",
+  "projectId": "gen-lang-client-0433007341",
+  "appId": "1:711394171147:web:ac3fc2446beae67124aa0e",
+  "apiKey": "AIzaSyAaGIhaM9xkZwFHxS6KoFLB4ei8GrrM2Zs",
+  "authDomain": "gen-lang-client-0433007341.firebaseapp.com",
   "firestoreDatabaseId": "adebisi-store-live",
-  "storageBucket": "ferrous-alcove-xghtt.firebasestorage.app",
-  "messagingSenderId": "52216001947",
-  "measurementId": "",
-  "oAuthClientId": "52216001947-4o8cnqg3b09v405570b422quqc5k46l3.apps.googleusercontent.com",
-  "recaptchaSiteKey": ""
+  "storageBucket": "gen-lang-client-0433007341.firebasestorage.app",
+  "messagingSenderId": "711394171147"
 }

@@ -1,763 +1,361 @@
-import React, { useState, useEffect } from 'react';
-import {
-  FabricProduct,
-  InquiryItem,
-  StoreSettings,
-  InquiryRecord,
-  MainSectionType,
-} from './types';
-import {
-  CATEGORIES,
-  INITIAL_PRODUCTS,
-  INITIAL_STORE_SETTINGS,
-  MAIN_SECTIONS,
-  OFFICIAL_LOGO_URL,
-} from './data/initialData';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CategoryGrid } from './components/CategoryGrid';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
-import { YardEstimatorModal } from './components/YardEstimatorModal';
+import { CheckoutModal } from './components/CheckoutModal';
 import { AdminPortal } from './components/AdminPortal';
-import { WhyShopWithUs } from './components/WhyShopWithUs';
-import { HowToOrder } from './components/HowToOrder';
+import { YardEstimatorModal } from './components/YardEstimatorModal';
+import { LightboxModal } from './components/LightboxModal';
 import { CustomerReviews } from './components/CustomerReviews';
+import { WhyShopWithUs } from './components/WhyShopWithUs';
 import { DeliverySection } from './components/DeliverySection';
 import { ContactSection } from './components/ContactSection';
-import { AboutUsSection } from './components/AboutUsSection';
 import { Footer } from './components/Footer';
-import { DesignGroupOrganizer } from './components/DesignGroupOrganizer';
-import { MessageCircle, Sparkles, Filter, SlidersHorizontal, Shirt, Footprints, Scissors, Search, Shield, ShoppingBag, Palette, ArrowLeft } from 'lucide-react';
-import {
-  subscribeToProducts,
-  subscribeToSettings,
-  saveProductToCloud,
-  deleteProductFromCloud,
-  saveSettingsToCloud,
-  saveInquiryToCloud,
-  testFirestoreConnection,
-} from './services/cloudSyncService';
+import { Product, CartItem, CategoryId } from './types';
+import { StoreService } from './services/storeService';
+import { STORE_INFO } from './data/initialData';
+import { 
+  MessageCircle, 
+  Sparkles, 
+  Filter, 
+  SearchX, 
+  CheckCircle,
+  PackageCheck
+} from 'lucide-react';
 
-const STORAGE_KEYS = {
-  PRODUCTS: 'asv_products_v5_real_imported_media',
-  SETTINGS: 'asv_settings_v3_luxury',
-  CART: 'asv_inquiry_cart_v3',
-  ORDERS: 'asv_inquiries_v3',
-};
+const CART_STORAGE_KEY = 'ayobami_sam_cart_v2';
 
-// Safe localStorage helper to prevent QuotaExceededError console warnings
-function safeSetLocalStorage(key: string, data: any) {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    try {
-      // If quota is reached, store stripped items without raw data-URL images
-      if (Array.isArray(data)) {
-        const stripped = data.map((item: any) => {
-          if (item && typeof item === 'object') {
-            const hasDataUri = typeof item.image === 'string' && item.image.startsWith('data:image');
-            return {
-              ...item,
-              image: hasDataUri ? '/hero-logo.png' : item.image,
-              galleryImages: Array.isArray(item.galleryImages)
-                ? item.galleryImages.filter((img: string) => typeof img === 'string' && !img.startsWith('data:image'))
-                : [],
-            };
-          }
-          return item;
-        });
-        localStorage.setItem(key, JSON.stringify(stripped));
-      }
-    } catch {
-      // Safe storage fallback
-    }
-  }
-}
+export const App: React.FC = () => {
+  // Products state
+  const [products, setProducts] = useState<Product[]>(() => StoreService.getLocalProducts());
+  const [selectedCategory, setSelectedCategory] = useState<CategoryId>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-export default function App() {
-  // Persistence state loaders
-  const [products, setProducts] = useState<FabricProduct[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasPeacock = parsed.some(p => p.name?.toLowerCase().includes('peacock'));
-          if (!hasPeacock) {
-            return [...INITIAL_PRODUCTS, ...parsed];
-          }
-          return parsed;
-        }
-      }
-      return INITIAL_PRODUCTS;
-    } catch {
-      return INITIAL_PRODUCTS;
-    }
-  });
-
-  const [settings, setSettings] = useState<StoreSettings>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const isOutdatedAddress = !parsed.address || parsed.address.includes('Main Market Plaza') || parsed.address.includes('Shop 14') || parsed.address.includes('Ibadan');
-        return {
-          ...INITIAL_STORE_SETTINGS,
-          ...parsed,
-          address: isOutdatedAddress ? '37/39 Balogun West, Molake House, Lagos Island, Nigeria' : parsed.address,
-          marketLocation: isOutdatedAddress ? '37/39 Balogun West, Molake House, Lagos Island' : (parsed.marketLocation || '37/39 Balogun West, Molake House, Lagos Island'),
-          logoUrl: (parsed.logoUrl && !parsed.logoUrl.includes('logo.jpg') && !parsed.logoUrl.includes('logo_bold.jpg')) ? parsed.logoUrl : OFFICIAL_LOGO_URL,
-          facebook: parsed.facebook || INITIAL_STORE_SETTINGS.facebook,
-          tiktok: parsed.tiktok || INITIAL_STORE_SETTINGS.tiktok,
-        };
-      }
-      return INITIAL_STORE_SETTINGS;
-    } catch {
-      return INITIAL_STORE_SETTINGS;
-    }
-  });
-
-  const [inquiryItems, setInquiryItems] = useState<InquiryItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.CART);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [inquiries, setInquiries] = useState<InquiryRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // UI States
-  const [activeTab, setActiveTab] = useState<string>('home');
-  const [activeSection, setActiveSection] = useState<'all' | MainSectionType>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('all');
-
-  // Modals
-  const [selectedDetailProduct, setSelectedDetailProduct] = useState<FabricProduct | null>(null);
-  const [detailDefaultQty, setDetailDefaultQty] = useState<number>(1);
-  const [isInquiryBagOpen, setIsInquiryBagOpen] = useState(false);
-  const [isYardGuideOpen, setIsYardGuideOpen] = useState(false);
+  // Modals state
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [cloudSyncStatus, setCloudSyncStatus] = useState<'connected' | 'syncing' | 'offline'>('syncing');
+  const [isEstimatorOpen, setIsEstimatorOpen] = useState(false);
+  const [lightboxData, setLightboxData] = useState<{ isOpen: boolean; imageUrl: string; title: string }>({
+    isOpen: false,
+    imageUrl: '',
+    title: '',
+  });
 
-  // Real-time Cloud Synchronization across all devices (Firebase Firestore)
+  // Cart state
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const stored = localStorage.getItem(CART_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {
+      console.warn('Failed to parse cart storage:', e);
+    }
+    return [];
+  });
+
+  // Save cart to localStorage
   useEffect(() => {
-    let isMounted = true;
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+    } catch (e) {
+      console.warn('Failed to save cart storage:', e);
+    }
+  }, [cartItems]);
 
-    // Verify server connectivity
-    testFirestoreConnection().then(isConnected => {
-      if (isMounted) {
-        setCloudSyncStatus(isConnected ? 'connected' : 'offline');
+  // Initial load from Firestore
+  useEffect(() => {
+    StoreService.fetchFirestoreProducts().then((res) => {
+      if (res.products && res.products.length > 0) {
+        setProducts(res.products);
       }
     });
-
-    // Subscribe to products collection in real time
-    const unsubscribeProducts = subscribeToProducts(
-      (cloudProducts) => {
-        if (isMounted && Array.isArray(cloudProducts) && cloudProducts.length > 0) {
-          setProducts(cloudProducts);
-          safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, cloudProducts);
-          setCloudSyncStatus('connected');
-        }
-      },
-      (error) => {
-        console.warn('Real-time products sync warning:', error);
-        if (isMounted) setCloudSyncStatus('offline');
-      }
-    );
-
-    // Subscribe to store settings in real time
-    const unsubscribeSettings = subscribeToSettings(
-      (cloudSettings) => {
-        if (isMounted && cloudSettings) {
-          setSettings(cloudSettings);
-          safeSetLocalStorage(STORAGE_KEYS.SETTINGS, cloudSettings);
-        }
-      },
-      (error) => {
-        console.warn('Real-time settings sync warning:', error);
-      }
-    );
-
-    return () => {
-      isMounted = false;
-      unsubscribeProducts();
-      unsubscribeSettings();
-    };
   }, []);
 
-  // Sync to localStorage as fast client-side offline cache
-  useEffect(() => {
-    safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, products);
+  // Compute category item counts
+  const productCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    products.forEach((p) => {
+      counts[p.category] = (counts[p.category] || 0) + 1;
+    });
+    return counts;
   }, [products]);
 
-  useEffect(() => {
-    safeSetLocalStorage(STORAGE_KEYS.SETTINGS, settings);
-  }, [settings]);
+  // Filter products by category and search
+  const filteredProducts = useMemo(() => {
+    return products.filter((prod) => {
+      // Category match
+      if (selectedCategory !== 'all' && prod.category !== selectedCategory) {
+        return false;
+      }
+      // Search match
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const inName = prod.name.toLowerCase().includes(query);
+        const inCategory = (prod.categoryLabel || '').toLowerCase().includes(query);
+        const inDesc = (prod.description || '').toLowerCase().includes(query);
+        const inMaterial = (prod.material || '').toLowerCase().includes(query);
+        const inColors = (prod.colors || []).some(c => c.toLowerCase().includes(query));
+        const inFeatures = (prod.features || []).some(f => f.toLowerCase().includes(query));
+        return inName || inCategory || inDesc || inMaterial || inColors || inFeatures;
+      }
+      return true;
+    });
+  }, [products, selectedCategory, searchQuery]);
 
-  useEffect(() => {
-    safeSetLocalStorage(STORAGE_KEYS.CART, inquiryItems);
-  }, [inquiryItems]);
-
-  useEffect(() => {
-    safeSetLocalStorage(STORAGE_KEYS.ORDERS, inquiries);
-  }, [inquiries]);
-
-  // Inquiry operations
-  const handleAddToCart = (product: FabricProduct, quantity: number, selectedColor?: string) => {
-    setInquiryItems(prev => {
-      const existingIdx = prev.findIndex(
-        item => item.product.id === product.id && item.selectedColor === selectedColor
+  // Cart actions
+  const handleAddToCart = (product: Product, quantity = 1, selectedColor?: string) => {
+    setCartItems((prev) => {
+      const existingIndex = prev.findIndex(
+        (it) => it.product.id === product.id && it.selectedColor === selectedColor
       );
-      if (existingIdx > -1) {
+      if (existingIndex >= 0) {
         const updated = [...prev];
-        updated[existingIdx].quantity += quantity;
+        updated[existingIndex].quantity += quantity;
         return updated;
       }
       return [...prev, { product, quantity, selectedColor }];
     });
   };
 
-  const handleUpdateQuantity = (productId: string, newQty: number) => {
-    setInquiryItems(prev =>
-      prev.map(item =>
-        item.product.id === productId ? { ...item, quantity: newQty } : item
-      )
+  const handleUpdateQuantity = (productId: string, quantity: number, color?: string) => {
+    if (quantity <= 0) {
+      handleRemoveItem(productId, color);
+      return;
+    }
+    setCartItems((prev) =>
+      prev.map((it) => {
+        if (it.product.id === productId && it.selectedColor === color) {
+          return { ...it, quantity };
+        }
+        return it;
+      })
     );
   };
 
-  const handleRemoveInquiryItem = (productId: string) => {
-    setInquiryItems(prev => prev.filter(item => item.product.id !== productId));
+  const handleRemoveItem = (productId: string, color?: string) => {
+    setCartItems((prev) =>
+      prev.filter((it) => !(it.product.id === productId && it.selectedColor === color))
+    );
   };
 
-  const handleClearInquiryBag = () => {
-    setInquiryItems([]);
+  const handleClearCart = () => {
+    setCartItems([]);
   };
 
-  const handleSubmitInquiry = (fullName: string, phone: string, state: string, city: string, notes: string) => {
-    const newInquiry: InquiryRecord = {
-      id: `INQ-${Date.now().toString().slice(-6)}`,
-      inquiryNumber: `ASV-${Date.now().toString().slice(-4)}`,
-      createdAt: new Date().toISOString(),
-      customer: {
-        fullName,
-        phone,
-        whatsapp: phone,
-        state,
-        city,
-        inquiryType: 'retail',
-        notes,
-      },
-      items: inquiryItems.map(i => ({
-        productId: i.product.id,
-        productName: i.product.name,
-        category: i.product.category,
-        mainSection: i.product.mainSection,
-        quantity: i.quantity,
-        unitLabel: i.product.unitLabel,
-        image: i.product.image,
-        selectedColor: i.selectedColor,
-      })),
-      status: 'New Inquiry',
-    };
-
-    setInquiries(prev => [newInquiry, ...prev]);
-    saveInquiryToCloud(newInquiry).catch(err => console.warn('Inquiry cloud backup warning:', err));
+  const handleOpenLightbox = (imageUrl: string, title: string) => {
+    setLightboxData({
+      isOpen: true,
+      imageUrl,
+      title,
+    });
   };
 
-  // Product Filter
-  const filteredProducts = products.filter(prod => {
-    const matchesSection = activeSection === 'all' || prod.mainSection === activeSection;
-    const matchesSubcat = selectedSubcategory === 'all' || prod.categorySlug === selectedSubcategory;
-    const matchesSearch = !searchQuery.trim() ||
-      prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.fabricType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prod.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-    return matchesSection && matchesSubcat && matchesSearch;
-  });
-
-  const clothsCount = products.filter(p => p.mainSection === 'cloths').length;
-  const shoesCount = products.filter(p => p.mainSection === 'shoes').length;
-  const machinesCount = products.filter(p => p.mainSection === 'tailoring-machine').length;
+  const cartTotalCount = cartItems.reduce((acc, it) => acc + it.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#1E1B18] font-sans antialiased flex flex-col selection:bg-[#D4AF37] selection:text-[#0F2E22]">
-      
-      {/* Top Main Navigation Header */}
+    <div className="min-h-screen bg-[#FAF8F5] text-stone-900 flex flex-col selection:bg-amber-500 selection:text-white">
+      {/* Header */}
       <Header
-        settings={settings}
-        inquiryItems={inquiryItems}
-        onOpenInquiryBag={() => setIsInquiryBagOpen(true)}
+        cartCount={cartTotalCount}
+        onOpenCart={() => setIsCartOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        activeSection={activeSection}
-        setActiveSection={(sec) => {
-          setActiveSection(sec);
-          setSelectedSubcategory('all');
-        }}
+        onOpenEstimator={() => setIsEstimatorOpen(true)}
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
         searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        onSearchChange={setSearchQuery}
       />
 
-      {/* Global Back To Home Banner when viewing any specific department or section */}
-      {(activeTab !== 'home' || activeSection !== 'all') && (
-        <div className="bg-[#0F2E22] text-white py-1 px-3 sm:px-6 border-b border-[#D4AF37]/40 flex items-center justify-between gap-2 text-[10px] sm:text-xs">
-          <button
-            onClick={() => {
-              setActiveTab('home');
-              setActiveSection('all');
-              setSelectedSubcategory('all');
-              setSearchQuery('');
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#D4AF37] hover:bg-white text-[#0F2E22] font-black text-[10px] sm:text-xs transition-all shadow-xs cursor-pointer group shrink-0"
-          >
-            <ArrowLeft className="w-3 h-3 text-[#0F2E22] group-hover:-translate-x-0.5 transition-transform" />
-            <span className="sm:hidden">← Home</span>
-            <span className="hidden sm:inline">← Back to Home Page</span>
-          </button>
-
-          <div className="flex items-center gap-1 text-[9px] sm:text-xs font-bold text-[#E0D6C8] truncate">
-            <span className="hidden sm:inline">Section:</span>
-            <span className="bg-white/10 px-1.5 py-0.5 rounded text-[#D4AF37] font-black uppercase tracking-wider truncate text-[9px] sm:text-xs">
-              {activeTab === 'catalog' 
-                ? (activeSection === 'cloths' ? 'Cloths' : activeSection === 'shoes' ? 'Shoes & Bags' : activeSection === 'tailoring-machine' ? 'Machines' : 'Catalogue')
-                : activeTab === 'about' ? 'About'
-                : activeTab === 'contact' ? 'Contact'
-                : 'Store'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content Sections */}
       <main className="flex-1">
-        
-        {/* VIEW 1: HOME PAGE */}
-        {activeTab === 'home' && (
-          <>
-            {/* Hero Section */}
-            <Hero
-              settings={settings}
-              onSelectSection={(sec) => {
-                setActiveSection(sec);
-                setActiveTab('catalog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onExploreAll={() => {
-                setActiveSection('all');
-                setActiveTab('catalog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              onContactClick={() => {
-                setActiveTab('contact');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+        {/* Hero Section */}
+        <Hero
+          onSelectCategory={(cat) => {
+            setSelectedCategory(cat);
+            const el = document.getElementById('catalog');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          onOpenEstimator={() => setIsEstimatorOpen(true)}
+        />
 
-            {/* 3 Core Departments Showcase */}
-            <CategoryGrid
-              selectedSection={activeSection}
-              onSelectSection={(sec) => {
-                setActiveSection(sec);
-                setActiveTab('catalog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
+        {/* Categories Bar */}
+        <CategoryGrid
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          productCounts={productCounts}
+        />
 
-            {/* Featured Product Highlights from all 3 Sections */}
-            <section className="py-16 sm:py-24 bg-[#FAF8F5] border-b border-[#E8E2D9]">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-                  <div className="space-y-2">
-                    <span className="text-xs font-black uppercase tracking-widest text-[#0F2E22] bg-white px-4 py-1.5 rounded-full border border-[#D4AF37]/50 shadow-xs inline-block">
-                      AUTHENTIC LAGOS INVENTORY
-                    </span>
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0F2E22] tracking-tight">
-                      FEATURED COLLECTIONS
-                    </h2>
-                    <p className="text-sm sm:text-base text-gray-600 font-medium">
-                      Explore top-selling Cloths, Handcrafted Shoes, and Tailoring Machines ready for immediate dispatch.
-                    </p>
-                  </div>
-
-                  {/* Section Segmented Filter Buttons - Horizontally Scrollable Bar */}
-                  <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none py-1 max-w-full">
-                    <button
-                      onClick={() => setActiveSection('all')}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all shrink-0 ${
-                        activeSection === 'all'
-                          ? 'bg-[#0F2E22] text-white shadow-md'
-                          : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      All Items ({products.length})
-                    </button>
-
-                    <button
-                      onClick={() => setActiveSection('cloths')}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
-                        activeSection === 'cloths'
-                          ? 'bg-emerald-900 text-white shadow-md'
-                          : 'bg-white text-emerald-900 border border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      <Shirt className="w-3.5 h-3.5 text-[#D4AF37]" />
-                      <span>Cloths ({clothsCount})</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveSection('shoes')}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
-                        activeSection === 'shoes'
-                          ? 'bg-amber-800 text-white shadow-md'
-                          : 'bg-white text-amber-900 border border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      <Footprints className="w-3.5 h-3.5 text-[#D4AF37]" />
-                      <span>Shoes ({shoesCount})</span>
-                    </button>
-
-                    <button
-                      onClick={() => setActiveSection('tailoring-machine')}
-                      className={`px-3.5 py-2 rounded-2xl text-xs font-black transition-all flex items-center gap-1.5 shrink-0 ${
-                        activeSection === 'tailoring-machine'
-                          ? 'bg-blue-900 text-white shadow-md'
-                          : 'bg-white text-blue-900 border border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      <Scissors className="w-3.5 h-3.5 text-[#D4AF37]" />
-                      <span>Machines ({machinesCount})</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Product Cards Grid (Spacious & Bold, No Price Tags) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 sm:gap-8">
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      settings={settings}
-                      onOpenDetail={(prod, defQty) => {
-                        setSelectedDetailProduct(prod);
-                        setDetailDefaultQty(defQty || 1);
-                      }}
-                      onAddToCart={handleAddToCart}
-                    />
-                  ))}
-                </div>
-
-                {/* View Full Catalog CTA */}
-                <div className="mt-14 text-center">
-                  <button
-                    onClick={() => {
-                      setActiveTab('catalog');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="px-8 py-4 rounded-2xl bg-[#0F2E22] hover:bg-[#1B4332] text-white font-black text-sm sm:text-base shadow-xl transition-all"
-                  >
-                    Explore Complete Department Catalog ({products.length} Items)
-                  </button>
-                </div>
-
-              </div>
-            </section>
-
-            {/* CURATED DESIGN ORGANIZER SECTION (Matching Groups & Standalone Shoes/Bags) */}
-            <section className="py-16 bg-[#FAF8F5] border-b border-[#E8E2D9]">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <DesignGroupOrganizer
-                  products={products}
-                  settings={settings}
-                  onOpenDetail={(prod, defQty) => {
-                    setSelectedDetailProduct(prod);
-                    setDetailDefaultQty(defQty || 1);
-                  }}
-                  onAddToCart={handleAddToCart}
-                  onSelectSection={(sec) => {
-                    setActiveSection(sec);
-                    setActiveTab('catalog');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                />
-              </div>
-            </section>
-
-            {/* Why Shop With Us */}
-            <WhyShopWithUs />
-
-            {/* How to Inquire & Order */}
-            <HowToOrder />
-
-            {/* Customer Testimonials */}
-            <CustomerReviews />
-
-            {/* Delivery & Logistics Info */}
-            <DeliverySection settings={settings} />
-
-            {/* About Store Section */}
-            <AboutUsSection
-              settings={settings}
-              onShopClick={() => {
-                setActiveTab('catalog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-
-            {/* Contact & Physical Address */}
-            <ContactSection settings={settings} />
-          </>
-        )}
-
-        {/* VIEW 2: CATALOG VIEW (3 SECTIONS FILTERABLE) */}
-        {activeTab === 'catalog' && (
-          <section className="py-12 sm:py-16 bg-[#FAF8F5]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-              
-              {/* Header Title */}
-              <div className="text-center max-w-3xl mx-auto space-y-3">
-                <span className="text-xs font-black uppercase tracking-widest text-[#0F2E22] bg-white px-4 py-1.5 rounded-full border border-[#D4AF37]/50 shadow-xs inline-block">
-                  AYOBAMI SAM VENTURES STORE CATALOGUE
+        {/* Product Catalog Section */}
+        <section id="catalog" className="py-8 px-4 sm:px-6 max-w-7xl mx-auto scroll-mt-24">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xl sm:text-2xl font-serif font-bold text-stone-950">
+                  {selectedCategory === 'all'
+                    ? 'All Store Merchandise'
+                    : products.find((p) => p.category === selectedCategory)?.categoryLabel || 'Products'}
                 </span>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0F2E22] tracking-tight">
-                  {activeSection === 'cloths' ? 'CLOTHS & FABRICS' :
-                   activeSection === 'shoes' ? 'SHOES & BAGS' :
-                   'COMPLETE INVENTORY CATALOG'}
-                </h1>
-                <p className="text-sm sm:text-base text-gray-600 font-medium">
-                  Select any item to view swipeable multi-angle pictures and tap "Inquire Price on WhatsApp" for live quotes.
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-semibold">
+                  {filteredProducts.length} {filteredProducts.length === 1 ? 'item' : 'items'}
+                </span>
+              </div>
+              {searchQuery && (
+                <p className="text-xs text-stone-500 mt-1">
+                  Search results for: <strong className="text-stone-900">"{searchQuery}"</strong>
                 </p>
-              </div>
-
-              {/* 3 Main Department Filter Bar */}
-              <div className="bg-white p-4 sm:p-5 rounded-3xl border-2 border-[#E8E2D9] shadow-sm flex flex-wrap items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <button
-                    onClick={() => { setActiveSection('all'); setSelectedSubcategory('all'); }}
-                    className={`px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-black transition-all ${
-                      activeSection === 'all'
-                        ? 'bg-[#0F2E22] text-white shadow'
-                        : 'bg-[#FAF8F5] text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    All Sections ({products.length})
-                  </button>
-                </div>
-
-                <div className="text-xs font-bold text-gray-500">
-                  Showing <strong>{filteredProducts.length}</strong> available products
-                </div>
-              </div>
-
-              {/* SPECIAL ORGANIZED VIEW FOR SHOES & BAGS SECTION */}
-              {activeSection === 'shoes' ? (
-                <DesignGroupOrganizer
-                  products={products}
-                  settings={settings}
-                  onOpenDetail={(prod, defQty) => {
-                    setSelectedDetailProduct(prod);
-                    setDetailDefaultQty(defQty || 1);
-                  }}
-                  onAddToCart={handleAddToCart}
-                  onSelectSection={(sec) => {
-                    setActiveSection(sec);
-                    setSelectedSubcategory('all');
-                  }}
-                />
-              ) : (
-                /* Standard Product Cards Grid for Other Sections or All */
-                filteredProducts.length === 0 ? (
-                  <div className="bg-white p-16 text-center rounded-3xl border border-[#E8E2D9] space-y-4">
-                    <Search className="w-12 h-12 text-gray-300 mx-auto" />
-                    <h3 className="text-lg font-black text-gray-800">No products match your search criteria</h3>
-                    <p className="text-xs text-gray-500 max-w-sm mx-auto">
-                      Try clearing the search box or selecting another section from above.
-                    </p>
-                    <button
-                      onClick={() => { setActiveSection('all'); setSearchQuery(''); setSelectedSubcategory('all'); }}
-                      className="px-6 py-2.5 rounded-xl bg-[#0F2E22] text-white font-black text-xs"
-                    >
-                      Reset All Filters
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7 sm:gap-8">
-                    {filteredProducts.map((product) => (
-                      <ProductCard
-                        key={product.id}
-                        product={product}
-                        settings={settings}
-                        onOpenDetail={(prod, defQty) => {
-                          setSelectedDetailProduct(prod);
-                          setDetailDefaultQty(defQty || 1);
-                        }}
-                        onAddToCart={handleAddToCart}
-                      />
-                    ))}
-                  </div>
-                )
               )}
-
             </div>
-          </section>
-        )}
 
-        {/* VIEW 3: ABOUT US VIEW */}
-        {activeTab === 'about' && (
-          <>
-            <AboutUsSection
-              settings={settings}
-              onShopClick={() => {
-                setActiveTab('catalog');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-            <WhyShopWithUs />
-            <CustomerReviews />
-          </>
-        )}
+            {/* Quick Filter Tag / Reset */}
+            {(selectedCategory !== 'all' || searchQuery) && (
+              <button
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSearchQuery('');
+                }}
+                className="text-xs font-semibold text-amber-800 hover:text-amber-950 underline self-start sm:self-auto"
+              >
+                Clear Filters &amp; Show All
+              </button>
+            )}
+          </div>
 
-        {/* VIEW 4: CONTACT US VIEW */}
-        {activeTab === 'contact' && (
-          <>
-            <ContactSection settings={settings} />
-            <DeliverySection settings={settings} />
-          </>
-        )}
+          {/* Product Grid */}
+          {filteredProducts.length === 0 ? (
+            <div className="py-16 text-center bg-white rounded-3xl border border-stone-200 p-8 space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto">
+                <SearchX className="w-7 h-7" />
+              </div>
+              <h3 className="font-serif font-bold text-lg text-stone-900">
+                No matching products found
+              </h3>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                We couldn't find any products matching your search. You can view all categories or use the Admin Uploader to add new cloth photos.
+              </p>
+              <div className="pt-2 flex justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSearchQuery('');
+                  }}
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs"
+                >
+                  View All Products
+                </button>
+                <button
+                  onClick={() => setIsAdminOpen(true)}
+                  className="px-5 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs"
+                >
+                  Upload Product Images
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onSelect={(p) => setSelectedProduct(p)}
+                  onAddToCart={(p) => handleAddToCart(p, 1)}
+                  onOpenLightbox={handleOpenLightbox}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
+        {/* Why Shop With Us Section */}
+        <WhyShopWithUs />
+
+        {/* Customer Reviews */}
+        <CustomerReviews />
+
+        {/* Delivery & Waybill Information */}
+        <DeliverySection />
+
+        {/* Contact & Map Section */}
+        <ContactSection />
       </main>
 
-      {/* Footer Removed */}
+      {/* Footer */}
+      <Footer
+        onSelectCategory={(cat) => {
+          setSelectedCategory(cat);
+          const el = document.getElementById('catalog');
+          el?.scrollIntoView({ behavior: 'smooth' });
+        }}
+        onOpenEstimator={() => setIsEstimatorOpen(true)}
+        onOpenAdmin={() => setIsAdminOpen(true)}
+      />
 
-      {/* PRODUCT DETAIL MODAL (No Price Tags, Touch Jumia Carousel) */}
+      {/* Modals & Drawers */}
       <ProductDetailModal
-        product={selectedDetailProduct}
-        settings={settings}
-        defaultQuantity={detailDefaultQty}
-        onClose={() => setSelectedDetailProduct(null)}
+        product={selectedProduct}
+        onClose={() => setSelectedProduct(null)}
         onAddToCart={handleAddToCart}
-        onBuyNow={(prod, qty, col) => {
-          handleAddToCart(prod, qty, col);
-          setSelectedDetailProduct(null);
-          setIsInquiryBagOpen(true);
-        }}
-        onOpenYardGuide={() => setIsYardGuideOpen(true)}
+        onOpenLightbox={handleOpenLightbox}
       />
 
-      {/* INQUIRY BAG DRAWER */}
       <CartDrawer
-        isOpen={isInquiryBagOpen}
-        onClose={() => setIsInquiryBagOpen(false)}
-        cart={inquiryItems}
-        settings={settings}
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cartItems}
         onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveInquiryItem}
-        onClearCart={handleClearInquiryBag}
-        onSubmitInquiry={handleSubmitInquiry}
-      />
-
-      {/* TAILOR YARD CALCULATOR MODAL */}
-      <YardEstimatorModal
-        isOpen={isYardGuideOpen}
-        onClose={() => setIsYardGuideOpen(false)}
-        onSelectSuggestedFabric={(fab: string) => {
-          setSearchQuery(fab);
-          setActiveTab('catalog');
-          setIsYardGuideOpen(false);
+        onRemoveItem={handleRemoveItem}
+        onProceedToCheckout={() => {
+          setIsCartOpen(false);
+          setIsCheckoutOpen(true);
         }}
       />
 
-      {/* DEDICATED STORE ADMIN PORTAL */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cartItems}
+        onOrderSuccess={handleClearCart}
+      />
+
       <AdminPortal
         isOpen={isAdminOpen}
         onClose={() => setIsAdminOpen(false)}
         products={products}
-        settings={settings}
-        inquiries={inquiries}
-        cloudSyncStatus={cloudSyncStatus}
-        onSaveProduct={(prod) => {
-          setProducts(prev => {
-            const idx = prev.findIndex(p => p.id === prod.id);
-            let updated: FabricProduct[];
-            if (idx > -1) {
-              updated = [...prev];
-              updated[idx] = prod;
-            } else {
-              updated = [prod, ...prev];
-            }
-            safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
-            return updated;
-          });
-          setCloudSyncStatus('syncing');
-          saveProductToCloud(prod)
-            .then(() => setCloudSyncStatus('connected'))
-            .catch(err => {
-              console.error('Failed to sync product to cloud:', err);
-              setCloudSyncStatus('offline');
-            });
+        onProductsUpdated={(updated) => setProducts(updated)}
+      />
+
+      <YardEstimatorModal
+        isOpen={isEstimatorOpen}
+        onClose={() => setIsEstimatorOpen(false)}
+        onFilterCategory={(cat) => {
+          setSelectedCategory(cat);
+          const el = document.getElementById('catalog');
+          el?.scrollIntoView({ behavior: 'smooth' });
         }}
-        onDeleteProduct={(id) => {
-          setProducts(prev => {
-            const updated = prev.filter(p => p.id !== id);
-            safeSetLocalStorage(STORAGE_KEYS.PRODUCTS, updated);
-            return updated;
-          });
-          setCloudSyncStatus('syncing');
-          deleteProductFromCloud(id)
-            .then(() => setCloudSyncStatus('connected'))
-            .catch(err => {
-              console.error('Failed to delete product from cloud:', err);
-              setCloudSyncStatus('offline');
-            });
-        }}
-        onUpdateSettings={(newSettings) => {
-          setSettings(newSettings);
-          safeSetLocalStorage(STORAGE_KEYS.SETTINGS, newSettings);
-          saveSettingsToCloud(newSettings)
-            .catch(err => console.error('Failed to sync settings to cloud:', err));
-        }}
-        onUpdateInquiryStatus={(inqId, status) => {
-          setInquiries(prev => {
-            const updated = prev.map(inq => inq.id === inqId ? { ...inq, status } : inq);
-            return updated;
-          });
-        }}
-        onResetToDefaults={() => {
-          setProducts(INITIAL_PRODUCTS);
-          setSettings(INITIAL_STORE_SETTINGS);
-          localStorage.removeItem(STORAGE_KEYS.PRODUCTS);
-          localStorage.removeItem(STORAGE_KEYS.SETTINGS);
-        }}
+      />
+
+      <LightboxModal
+        isOpen={lightboxData.isOpen}
+        onClose={() => setLightboxData((prev) => ({ ...prev, isOpen: false }))}
+        imageUrl={lightboxData.imageUrl}
+        title={lightboxData.title}
       />
 
       {/* Floating WhatsApp Quick Action Button */}
       <a
-        href={`https://wa.me/${settings.whatsapp}?text=${encodeURIComponent(`Hello ${settings.storeName}, I would like to inquire about your products (Cloths, Shoes, Tailoring Machines).`)}`}
+        href={`https://wa.me/${STORE_INFO.whatsapp.replace('+', '')}?text=Hello%20Ayobami%20SAM%20Venture,%20I%20am%20chatting%20from%20your%20website`}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Chat on WhatsApp"
-        className="fixed bottom-6 right-6 z-40 bg-[#25D366] hover:bg-[#1EBE5D] text-white p-4 rounded-full shadow-2xl flex items-center gap-2.5 group hover:scale-110 transition-all duration-300 border-2 border-white"
+        className="fixed bottom-5 right-5 z-40 p-3.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2 group"
+        title="Chat with Merchant on WhatsApp"
       >
-        <MessageCircle className="w-6 h-6 fill-current" />
-        <span className="hidden sm:inline font-black text-xs pr-1">Chat on WhatsApp</span>
+        <MessageCircle className="w-6 h-6 fill-white" />
+        <span className="hidden group-hover:inline text-xs font-bold pr-1">
+          Chat on WhatsApp
+        </span>
       </a>
-
     </div>
   );
-}
+};

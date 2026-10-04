@@ -1,57 +1,28 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import firebaseConfig from '../firebase-applet-config.json';
 
-export interface CustomFirebaseConfig {
-  apiKey: string;
-  authDomain?: string;
-  projectId: string;
-  storageBucket?: string;
-  messagingSenderId?: string;
-  appId: string;
-  firestoreDatabaseId?: string;
-}
+export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId || '(default)');
+export const auth = getAuth(app);
+export const storage = getStorage(app);
 
-// Check if user has explicitly supplied a fresh custom Firebase configuration
-export function hasCustomFirebaseProject(): boolean {
-  if (typeof window === 'undefined') return false;
+export async function testFirestoreConnection(): Promise<{ success: boolean; message: string }> {
   try {
-    const saved = localStorage.getItem('asv_custom_firebase_project');
-    if (!saved) return false;
-    const parsed = JSON.parse(saved);
-    return Boolean(parsed.apiKey && parsed.projectId && parsed.appId);
-  } catch {
-    return false;
-  }
-}
-
-export function getCustomFirebaseConfig(): CustomFirebaseConfig | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const saved = localStorage.getItem('asv_custom_firebase_project');
-    if (!saved) return null;
-    const parsed = JSON.parse(saved);
-    if (parsed.apiKey && parsed.projectId && parsed.appId) {
-      return parsed;
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    return { success: true, message: 'Connected to Firestore adebisi-store-live successfully.' };
+  } catch (error) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    if (errMessage.includes('permission-denied')) {
+      return { success: true, message: 'Firestore reachable (Security rules active).' };
     }
-  } catch {}
-  return null;
+    if (errMessage.includes('the client is offline')) {
+      return { success: false, message: 'Client is offline or database initializing.' };
+    }
+    return { success: false, message: errMessage };
+  }
 }
 
-// Safe singleton instances only created when a valid custom project is provided
-let _app: FirebaseApp | null = null;
-let _db: Firestore | null = null;
-
-export function getFirebaseInstance(): { app: FirebaseApp | null; db: Firestore | null } {
-  const customConfig = getCustomFirebaseConfig();
-  if (!customConfig) {
-    return { app: null, db: null };
-  }
-
-  if (!_app) {
-    const apps = getApps();
-    _app = apps.length > 0 ? getApp() : initializeApp(customConfig);
-    _db = customConfig.firestoreDatabaseId ? getFirestore(_app, customConfig.firestoreDatabaseId) : getFirestore(_app);
-  }
-
-  return { app: _app, db: _db };
-}
+export { firebaseConfig };

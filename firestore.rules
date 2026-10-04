@@ -2,30 +2,28 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    function isValidProduct(data) {
-      return data.id is string
-        && data.name is string && data.name.size() > 0 && data.name.size() <= 200
-        && data.price is number && data.price >= 0
-        && data.department is string
-        && data.category is string
-        && data.image is string && data.image.size() > 0;
+    // Default catch-all
+    match /{document=**} {
+      allow read, write: if false;
     }
 
+    // Connection test document
+    match /test/{docId} {
+      allow read: if true;
+    }
+
+    // Products catalog
     match /products/{productId} {
+      // Anyone can browse store products
       allow read: if true;
-      allow create, update: if isValidProduct(request.resource.data);
-      allow delete: if true;
-    }
-
-    match /settings/{settingId} {
-      allow read: if true;
+      // Writes allowed for catalog management
       allow write: if true;
     }
 
-    match /inquiries/{inquiryId} {
-      allow read: if true;
-      allow create, update: if request.resource.data.customerName is string && request.resource.data.phone is string;
-      allow delete: if true;
+    // Customer orders and inquiries
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if true;
     }
   }
 }
