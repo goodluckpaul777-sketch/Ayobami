@@ -1,0 +1,68 @@
+name: Firebase to Local Backup & GitHub Sync
+
+on:
+  schedule:
+    # Runs automatically every 12 hours (at 00:00 and 12:00 UTC)
+    - cron: '0 0,12 * * *'
+  workflow_dispatch:
+    # Allows manual trigger anytime from GitHub Actions tab
+    inputs:
+      reason:
+        description: 'Reason for manual sync trigger'
+        required: false
+        default: 'Manual merchant backup trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-backup:
+    name: Sync Firebase Products & Images to Local
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Firebase to Local Backup & Image Sync
+        env:
+          FIREBASE_SERVICE_ACCOUNT_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+        run: npm run sync:firebase
+
+      - name: Stage Synchronized Changes
+        run: |
+          git add src/data/clean_products.json src/data/products.ts public/images/products/
+
+      - name: Run Strict Verification Guardrails
+        run: npm run sync:verify
+
+      - name: Check for Changes
+        id: git_status
+        run: |
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "✓ No catalog or image changes detected. Everything is up to date."
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "✓ Detected changes in catalog or images to commit."
+          fi
+
+      - name: Commit & Push Backup to GitHub
+        if: steps.git_status.outputs.has_changes == 'true'
+        run: |
+          git config user.name "Ayobami SAM Sync Bot"
+          git config user.email "sync-bot@ayobamisam.local"
+          git commit -m "chore(backup): automated sync of Firebase products & local images [skip ci]"
+          git push origin main
+          echo "🚀 Successfully backed up products and images to GitHub main branch. Vercel deployment triggered."

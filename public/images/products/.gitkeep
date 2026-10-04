@@ -1,0 +1,2 @@
+# Local static product images directory
+# Images are synced from Firebase to here and served directly by Vercel CDN
